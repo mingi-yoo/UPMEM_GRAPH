@@ -42,7 +42,7 @@ static Graph read_csr(string csr_path) {
         getline(csr, line);
         ss.str(line);
         while (getline(ss, temp, ' ')) 
-            graph.col_idx(stoi(temp));
+            graph.col_idx.push_back(stoi(temp));
 
         for (int i = 0; i < graph.num_v; i++)
             graph.value.push_back(1.0f / graph.num_v);

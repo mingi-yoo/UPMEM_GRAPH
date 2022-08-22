@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "../support/common.h"
 #include "../support/graph.h"
 
 using namespace dpu;
@@ -27,14 +26,12 @@ using namespace std;
 #define DPU_OURS "pr_ours"
 #endif
 
-DPUGraph populate_mram(DpuSetOps& dpu, Graph& graph) {
-    dpu.copy("num_v", graph.num_v);
-    dpu.copy("num_e", graph.num_e);
+void populate_mram(DpuSetOps& dpu, Graph& graph) {
+    //dpu.copy("num_v", graph.num_v, static_cast<unsigned>(1));
+    //dpu.copy("num_e", graph.num_e, static_cast<unsigned>(1));
     dpu.copy("row_ptr", graph.row_ptr, static_cast<unsigned>(graph.num_v+1));
     dpu.copy("col_idx", graph.col_idx, static_cast<unsigned>(graph.num_e));
     dpu.copy("value", graph.value, static_cast<unsigned>(graph.num_e));
-
-    return dpu_graph;
 }
 
 void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
@@ -66,9 +63,11 @@ int main(int argc, char** argv) {
 
         auto system = DpuSet::allocate(NB_OF_DPUS);
         auto dpu_baseline = system.dpus()[0];
-        dpu_baseline->load(DPU_BASELINE)
-        populate_mram(*dpu_baseline);
-        dpu->exec();
+        dpu_baseline->load(DPU_BASELINE);
+        dpu_baseline->copy("num_v", graph.num_v);
+        dpu_baseline->copy("num_e", graph.num_e);
+        populate_mram(dpu_baseline, graph);
+        dpu_baseline->exec();
 
         // TO-DO : ours
 
