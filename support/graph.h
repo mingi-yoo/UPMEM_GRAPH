@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-
 using namespace std;
 
 struct PRValue {
@@ -21,7 +19,7 @@ struct Graph {
     uint32_t num_e;
     vector<uint32_t> row_ptr;
     vector<uint32_t> col_idx;
-    vector<PRValue> pr;
+    vector<float> value;
 };
 
 static Graph read_csr(string csr_path) {
@@ -46,12 +44,8 @@ static Graph read_csr(string csr_path) {
         while (getline(ss, temp, ' ')) 
             graph.col_idx(stoi(temp));
 
-        for (i = 0; i < graph.num_v; i++) {
-            PRValue pr;
-            pr.vid = i;
-            pr.value = 1.0f / graph.num_v;
-            graph.pr.push_back(pr);
-        }
+        for (int i = 0; i < graph.num_v; i++)
+            graph.value.push_back(1.0f / graph.num_v);
 
         csr.close();
 

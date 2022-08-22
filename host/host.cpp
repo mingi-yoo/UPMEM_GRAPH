@@ -17,8 +17,10 @@
 using namespace dpu;
 using namespace std;
 
+#define NB_OF_DPUS 1
+
 #ifndef DPU_BASELINE
-#define DPU_BASLINE "pr_baseline"
+#define DPU_BASELINE "pr_baseline"
 #endif
 
 #ifndef DPU_OURS

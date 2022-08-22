@@ -5,7 +5,7 @@
 
 #define BUFFER_SIZE (1 << 16)
 
-__mram_noinit uint32_t row_ptr[BUFER_SIZE];
+__mram_noinit uint32_t row_ptr[BUFFER_SIZE];
 __mram_noinit uint32_t col_idx[BUFFER_SIZE];
 __mram_noinit float value[BUFFER_SIZE];
 
