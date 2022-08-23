@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+#define ROUND_UP_TO_MULTIPLE_OF_2(x)    ((((x) + 1)/2)*2)
+#define ROUND_UP_TO_MULTIPLE_OF_8(x)    ((((x) + 7)/8)*8)
+
 using namespace std;
 
 struct Graph {
@@ -21,26 +24,28 @@ static Graph read_csr(string csr_path) {
     Graph graph;
 
     ifstream csr(csr_path);
-    string line, temp;
 
     if (csr.is_open()) {
         csr >> graph.num_v >> graph.num_e;
 
-        // parsing row_ptr
-        getline(csr, line);
-        stringstream ss(line);
-        while (getline(ss, temp, ' '))
-            graph.row_ptr.push_back(stoi(temp));
+        graph.row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v+1));
+        graph.col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_e));
+        graph.value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
 
-        // parsing col_idx
-        ss.clear();
-        getline(csr, line);
-        ss.str(line);
-        while (getline(ss, temp, ' ')) 
-            graph.col_idx.push_back(stoi(temp));
+        for (int i = 0; i <= graph.num_v; i++) {
+            int row;
+            csr >> row;
+            graph.row_ptr[i] = row;
+        }
+
+        for (int i = 0; i < graph.num_e; i++) {
+            int col;
+            csr >> col;
+            graph.col_idx[i] = col;
+        }
 
         for (int i = 0; i < graph.num_v; i++)
-            graph.value.push_back(1.0f / graph.num_v);
+            graph.value[i] = 1.0f / graph.num_v;
 
         csr.close();
 
