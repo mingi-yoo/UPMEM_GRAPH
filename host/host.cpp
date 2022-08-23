@@ -19,11 +19,11 @@ using namespace std;
 #define NB_OF_DPUS 1
 
 #ifndef DPU_BASELINE
-#define DPU_BASELINE "../dpu/pr_baseline"
+#define DPU_BASELINE "./bin/pr_baseline"
 #endif
 
 #ifndef DPU_OURS
-#define DPU_OURS "../dpu/pr_ours"
+#define DPU_OURS "./bin/pr_ours"
 #endif
 
 void populate_mram(DpuSetOps& dpu, Graph& graph) {
