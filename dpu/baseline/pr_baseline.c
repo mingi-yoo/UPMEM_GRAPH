@@ -22,6 +22,12 @@ int main() {
     mram_read(row_ptr, row, sizeof(row));
     for (int i = 0; i < 10; i++)
         printf("%d\n", row[i]);
-    
+    mram_read(col_idx, col, sizeof(col));
+    for (int i = 0; i < 10; i++)
+        printf("%d\n", col[i]);
+    mram_read(value, val, sizeof(val));
+    for (int i = 0; i < 10; i++)
+        printf("%f\n", val[i]);
+
     return 0;
 }

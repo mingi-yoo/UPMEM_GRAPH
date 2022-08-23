@@ -32,19 +32,19 @@ static Graph read_csr(string csr_path) {
         graph.col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_e));
         graph.value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
 
-        for (int i = 0; i <= graph.num_v; i++) {
+        for (uint32_t i = 0; i <= graph.num_v; i++) {
             int row;
             csr >> row;
             graph.row_ptr[i] = row;
         }
 
-        for (int i = 0; i < graph.num_e; i++) {
+        for (uint32_t i = 0; i < graph.num_e; i++) {
             int col;
             csr >> col;
             graph.col_idx[i] = col;
         }
 
-        for (int i = 0; i < graph.num_v; i++)
+        for (uint32_t i = 0; i < graph.num_v; i++)
             graph.value[i] = 1.0f / graph.num_v;
 
         csr.close();

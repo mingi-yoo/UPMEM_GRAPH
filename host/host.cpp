@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <chrono>
+
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -60,13 +62,20 @@ int main(int argc, char** argv) {
 
     try {
         Graph graph = read_csr(csr_path);
+        cout<<"GRAPH READ COMPLETE"<<endl;
 
         auto system = DpuSet::allocate(NR_DPUS);
         auto dpu_baseline = system.dpus()[0];
+        cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
+
         dpu_baseline->load(DPU_BASELINE);
         populate_mram(*dpu_baseline, graph);
+        chrono::steady_clock::time_point begin = chrono::steady_clock::now();
         dpu_baseline->exec();
+        chrono::steady_clock::time_point end = chrono::steady_clock::now();
         dpu_baseline->log(cout);
+
+        cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         // TO-DO : ours
 
