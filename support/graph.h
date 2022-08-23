@@ -9,11 +9,6 @@
 
 using namespace std;
 
-struct PRValue {
-    uint32_t vid;
-    float value;
-};
-
 struct Graph {
     uint32_t num_v;
     uint32_t num_e;
@@ -55,3 +50,5 @@ static Graph read_csr(string csr_path) {
 
     return graph;
 }
+
+#endif
