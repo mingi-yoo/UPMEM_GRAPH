@@ -11,12 +11,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "../support/graph.h"
+#include "graph.h"
 
 using namespace dpu;
 using namespace std;
-
-#define NB_OF_DPUS 1
 
 #ifndef DPU_BASELINE
 #define DPU_BASELINE "./bin/pr_baseline"
@@ -63,7 +61,7 @@ int main(int argc, char** argv) {
     try {
         Graph graph = read_csr(csr_path);
 
-        auto system = DpuSet::allocate(NB_OF_DPUS);
+        auto system = DpuSet::allocate(NR_DPUS);
         auto dpu_baseline = system.dpus()[0];
         dpu_baseline->load(DPU_BASELINE);
         populate_mram(*dpu_baseline, graph);
