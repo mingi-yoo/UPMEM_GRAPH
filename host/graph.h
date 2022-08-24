@@ -7,8 +7,7 @@
 #include <string>
 #include <vector>
 
-#define ROUND_UP_TO_MULTIPLE_OF_2(x)    ((((x) + 1)/2)*2)
-#define ROUND_UP_TO_MULTIPLE_OF_8(x)    ((((x) + 7)/8)*8)
+#include "../support/common.h"
 
 using namespace std;
 
