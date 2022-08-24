@@ -28,13 +28,13 @@ using namespace std;
 #endif
 
 void populate_mram(DpuSetOps& dpu, Graph& graph) {
-    vector<DPUGraph> dpu_param(1, 0);
+    vector<DPUGraph> dpu_param;
     dpu_param[0].num_v = graph.num_v;
     dpu_param[0].num_e = graph.num_e;
     dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-    dpu_param[0].col_idx_start = static_cast<unsigned>(graph.row_ptr.size() * 4);
-    dpu_param[0].value_start = static_cast<unsigned>(graph.col_idx.size() * 4);
-    dpu_param[0].output_start = static_cast<unsigned>(graph.value.size() * 4);
+    dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(graph.row_ptr.size() * 4);
+    dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(graph.col_idx.size() * 4);
+    dpu_param[0].output_start = dpu_param[0].value_start + static_cast<unsigned>(graph.value.size() * 4);
 
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].row_ptr_start, graph.row_ptr, static_cast<unsigned>(graph.row_ptr.size() * 4));
