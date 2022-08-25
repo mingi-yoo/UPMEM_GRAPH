@@ -84,15 +84,17 @@ int main(int argc, char** argv) {
         chrono::steady_clock::time_point end = chrono::steady_clock::now();
         dpu_baseline->log(cout);
 
-        vector<float> result;
-        dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * 4), DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0]->output_start);
+        vector<vector<float>> result(1);
+	result.front().resize(static_cast<unsigned>(graph.value.size()));
+        dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * 4), DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].output_start);
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         cout<<"PR CHECK"<<endl;
+	
         for (int i = 0; i < 5; i++)
-            cout<< result[i] <<endl;
-
+            cout<< result.front()[i] <<endl;
+	
         // TO-DO : ours
 
     } catch (const DpuError & e) {

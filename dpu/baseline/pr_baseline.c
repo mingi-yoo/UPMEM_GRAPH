@@ -13,13 +13,13 @@
 
 #include "../../support/common.h"
 
-BARRIER_INIT(my_barrier, NR_TASKLETS);
+//BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 int main() {
     // reset MRAM heap
-    if (me() == 0)
-        mram_reset();
-    barrier_wait(&my_barrier);
+    //if (me() == 0)
+    mem_reset();
+   // barrier_wait(&my_barrier);
 
     // load graph data offset information
     uint32_t g_info_m = (uint32_t) DPU_MRAM_HEAP_POINTER;
@@ -41,9 +41,9 @@ int main() {
     seqreader_t col_idx_reader;
     uint32_t* col_idx = seqread_init(seqread_alloc(), (__mram_ptr void*)col_idx_m, &col_idx_reader);
 
-    uint32_t value_cache_size = 4096;
-    uint32_t out_deg_cache_size = 4096;
-    uint32_t output_cache_size = 4096;
+    uint32_t value_cache_size = 64;
+    uint32_t out_deg_cache_size = 64;
+    uint32_t output_cache_size = 64;
 
     float* value = mem_alloc(value_cache_size*sizeof(float));
     mram_read((__mram_ptr void const*)value_m, value, value_cache_size*4);
@@ -57,15 +57,16 @@ int main() {
     float kdamp = 0.85;
 
     uint32_t row_prev = *row_ptr;
-    float base_score = 1.0f / g_info.num_v;
+    float base_score = 1.0f / g_info->num_v;
 
     uint32_t cur_cache_idx = 0;
 
-    for (uint32_t i = 0; i < g_info.num_v; i++) {
-        uint32_t row_cur = seqread_get(row_ptr, sizeof(uint32_t), &row_ptr_reader);
-        uint32_t in_deg = row_cur - row_prev;
+    for (uint32_t i = 0; i < g_info->num_v; i++) {
+        row_ptr = seqread_get(row_ptr, sizeof(uint32_t), &row_ptr_reader);
+        uint32_t in_deg = *row_ptr - row_prev;
         float incoming_total = 0;
         float out_value = 0;
+
         for (uint32_t j = 0; j < in_deg; j++) {
             uint32_t col = *col_idx;
             uint32_t cache_idx = col/value_cache_size;
@@ -78,15 +79,18 @@ int main() {
             incoming_total += value[cache_offset] / out_deg[cache_offset];
             col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
         }
+
+	row_prev = *row_ptr;
         out_value = base_score + kdamp * incoming_total;
-        uint32_t output_idx = row/output_cache_size;
-        uint32_t output_offset = row%output_cache_size;
+        uint32_t output_idx = i/output_cache_size;
+        uint32_t output_offset = i%output_cache_size;
         output[output_offset] = out_value;
         if (output_idx == 0 && output_offset < 10)
             printf("DPU RESULT: %f\n",out_value);
         if (output_offset == output_cache_size - 1)
             mram_write(output, (__mram_ptr void*)(output_m + output_idx*output_cache_size*sizeof(float)), output_cache_size*4);
     }
+    printf("DPU PAGERANK COMPLETE\n");
 
     return 0;
 }
