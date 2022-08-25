@@ -27,19 +27,22 @@ using namespace std;
 #define DPU_OURS "./bin/pr_ours"
 #endif
 
+vector<DPUGraph> dpu_param(1);
+
 void populate_mram(DpuSetOps& dpu, Graph& graph) {
-    vector<DPUGraph> dpu_param;
     dpu_param[0].num_v = graph.num_v;
     dpu_param[0].num_e = graph.num_e;
     dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
     dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(graph.row_ptr.size() * 4);
     dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(graph.col_idx.size() * 4);
-    dpu_param[0].output_start = dpu_param[0].value_start + static_cast<unsigned>(graph.value.size() * 4);
+    dpu_param[0].out_deg_start = dpu_param[0].value_start + static_cast<unsigned>(graph.out_deg.size() * 4);
+    dpu_param[0].output_start = dpu_param[0].out_deg_start + static_cast<unsigned>(graph.value.size() * 4);
 
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].row_ptr_start, graph.row_ptr, static_cast<unsigned>(graph.row_ptr.size() * 4));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].col_idx_start, graph.col_idx, static_cast<unsigned>(graph.col_idx.size() * 4));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].value_start, graph.value, static_cast<unsigned>(graph.value.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].out_deg_start, graph.out_deg, static_cast<unsigned>(graph.out_deg.size() * 4));
 }
 
 void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
@@ -81,7 +84,14 @@ int main(int argc, char** argv) {
         chrono::steady_clock::time_point end = chrono::steady_clock::now();
         dpu_baseline->log(cout);
 
+        vector<float> result;
+        dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * 4), DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0]->output_start);
+
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+
+        cout<<"PR CHECK"<<endl;
+        for (int i = 0; i < 5; i++)
+            cout<< result[i] <<endl;
 
         // TO-DO : ours
 

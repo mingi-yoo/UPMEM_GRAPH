@@ -10,6 +10,7 @@ struct DPUGraph {
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
     uint32_t value_start;
+    uint32_t out_deg_start;
     uint32_t output_start;
 };
 

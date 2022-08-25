@@ -16,6 +16,7 @@ struct Graph {
     uint32_t num_e;
     vector<uint32_t> row_ptr;
     vector<uint32_t> col_idx;
+    vector<uint32_t> out_deg;
     vector<float> value;
 };
 
@@ -29,6 +30,7 @@ static Graph read_csr(string csr_path) {
 
         graph.row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v+1));
         graph.col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_e));
+        graph.out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
         graph.value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
 
         for (uint32_t i = 0; i <= graph.num_v; i++) {
@@ -41,6 +43,12 @@ static Graph read_csr(string csr_path) {
             int col;
             csr >> col;
             graph.col_idx[i] = col;
+        }
+
+        for (uint32_t i = 0; i < graph.num_v; i++) {
+            int deg;
+            csr >> deg;
+            graph.out_deg[i] = deg;
         }
 
         for (uint32_t i = 0; i < graph.num_v; i++)
