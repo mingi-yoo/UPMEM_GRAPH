@@ -26,7 +26,7 @@ int main() {
     struct DPUGraph* g_info = (struct DPUGraph*) mem_alloc(ROUND_UP_TO_MULTIPLE_OF_8(sizeof(struct DPUGraph)));
     mram_read((__mram_ptr void const*)g_info_m, g_info, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(struct DPUGraph)));
 
-    printf("%d %d\n", g_info->num_v, g_info->num_e);
+    printf("%d %d %d\n",g_info->num_v_origin, g_info->num_v, g_info->num_e);
 
     // initialize data offset
     uint32_t row_ptr_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->row_ptr_start;
@@ -57,7 +57,7 @@ int main() {
     float kdamp = 0.85;
 
     uint32_t row_prev = *row_ptr;
-    float base_score = 1.0f / g_info->num_v;
+    float base_score = 1.0f / g_info->num_v_origin;
 
     uint32_t cur_cache_idx = 0;
 
@@ -80,7 +80,7 @@ int main() {
             col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
         }
 
-	row_prev = *row_ptr;
+        row_prev = *row_ptr;
         out_value = base_score + kdamp * incoming_total;
         uint32_t output_idx = i/output_cache_size;
         uint32_t output_offset = i%output_cache_size;

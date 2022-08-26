@@ -1,4 +1,4 @@
-#include <dpu>
+    #include <dpu>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -30,6 +30,7 @@ using namespace std;
 vector<DPUGraph> dpu_param(NR_DPUS);
 
 void populate_mram(DpuSetOps& dpu, Graph& graph) {
+    dpu_param[0].num_v_origin = graph.num_v_origin;
     dpu_param[0].num_v = graph.num_v;
     dpu_param[0].num_e = graph.num_e;
     dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
@@ -46,7 +47,7 @@ void populate_mram(DpuSetOps& dpu, Graph& graph) {
 }
 
 void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
-    // TO-DO
+    dpu_param[id].num_v_origin = graph.num_v_origin;
     dpu_param[id].num_v = graph.num_v;
     dpu_param[id].num_e = graph.num_e;
     dpu_param[id].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));

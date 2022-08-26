@@ -5,6 +5,7 @@
 #define ROUND_UP_TO_MULTIPLE_OF_8(x)    ((((x) + 7)/8)*8)
 
 struct DPUGraph {
+    uint32_t num_v_origin;
     uint32_t num_v;
     uint32_t num_e;
     uint32_t row_ptr_start;

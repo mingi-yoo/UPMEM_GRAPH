@@ -13,6 +13,7 @@
 using namespace std;
 
 struct Graph {
+    uint32_t num_v_origin;
     uint32_t num_v;
     uint32_t num_e;
     vector<uint32_t> row_ptr;
@@ -28,6 +29,7 @@ static Graph read_csr(string csr_path) {
 
     if (csr.is_open()) {
         csr >> graph.num_v >> graph.num_e;
+        graph.num_v_origin = graph.num_v;
 
         graph.row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v+1));
         graph.col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_e));
@@ -72,6 +74,7 @@ static vector<Graph> divide_graph(Graph& graph, uint32_t n) {
 
     for (uint32_t i = 0; i < n; i++) {
         Graph subgraph;
+        subgraph.num_v_origin = graph.num_v;
         if (i != n-1) {
             subgraph.num_v = unit_v;
             subgraph.num_e = graph.row_ptr[(i+1)*unit_v] - graph.row_ptr[i*unit_v];
@@ -81,9 +84,9 @@ static vector<Graph> divide_graph(Graph& graph, uint32_t n) {
             subgraph.out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
             subgraph.value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
 
-            subgraph.row_ptr.push_back(0);
+            subgraph.row_ptr[0] = 0;
             uint32_t bias = graph.row_ptr[i*unit_v];
-            int idx = 0;
+            int idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
                 subgraph.row_ptr[idx] = graph.row_ptr[j] - bias;
@@ -109,9 +112,9 @@ static vector<Graph> divide_graph(Graph& graph, uint32_t n) {
             subgraph.out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
             subgraph.value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.num_v));
 
-            subgraph.row_ptr.push_back(0);
+            subgraph.row_ptr[0] = 0;
             uint32_t bias = graph.row_ptr[i*unit_v];
-            int idx = 0;
+            int idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= graph.num_v; j++){
                 subgraph.row_ptr[idx] = graph.row_ptr[j] - bias;
@@ -127,7 +130,9 @@ static vector<Graph> divide_graph(Graph& graph, uint32_t n) {
             subgraph.out_deg = graph.out_deg;
             subgraph.value = graph.value;
         }
+        subgraphs.push_back(subgraph);
     }
+    return subgraphs;
 }
 
 #endif
