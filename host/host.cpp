@@ -47,19 +47,19 @@ void populate_mram(DpuSetOps& dpu, Graph& graph) {
 
 void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
     // TO-DO
-    dpu_param[0].num_v = graph.num_v;
-    dpu_param[0].num_e = graph.num_e;
-    dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-    dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(graph.row_ptr.size() * 4);
-    dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(graph.col_idx.size() * 4);
-    dpu_param[0].out_deg_start = dpu_param[0].value_start + static_cast<unsigned>(graph.out_deg.size() * 4);
-    dpu_param[0].output_start = dpu_param[0].out_deg_start + static_cast<unsigned>(graph.value.size() * 4);
+    dpu_param[id].num_v = graph.num_v;
+    dpu_param[id].num_e = graph.num_e;
+    dpu_param[id].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+    dpu_param[id].col_idx_start = dpu_param[id].row_ptr_start + static_cast<unsigned>(graph.row_ptr.size() * 4);
+    dpu_param[id].value_start = dpu_param[id].col_idx_start + static_cast<unsigned>(graph.col_idx.size() * 4);
+    dpu_param[id].out_deg_start = dpu_param[id].value_start + static_cast<unsigned>(graph.out_deg.size() * 4);
+    dpu_param[id].output_start = dpu_param[id].out_deg_start + static_cast<unsigned>(graph.value.size() * 4);
 
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].row_ptr_start, graph.row_ptr, static_cast<unsigned>(graph.row_ptr.size() * 4));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].col_idx_start, graph.col_idx, static_cast<unsigned>(graph.col_idx.size() * 4));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].value_start, graph.value, static_cast<unsigned>(graph.value.size() * 4));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].out_deg_start, graph.out_deg, static_cast<unsigned>(graph.out_deg.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[id].row_ptr_start, graph.row_ptr, static_cast<unsigned>(graph.row_ptr.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[id].col_idx_start, graph.col_idx, static_cast<unsigned>(graph.col_idx.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[id].value_start, graph.value, static_cast<unsigned>(graph.value.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[id].out_deg_start, graph.out_deg, static_cast<unsigned>(graph.out_deg.size() * 4));
 }
 
 int main(int argc, char** argv) {
@@ -109,13 +109,14 @@ int main(int argc, char** argv) {
             cout<< result.front()[i] <<endl;
 
         // TO-DO : ours
+        vector<Graph> subgraphs = divide_graph(graph, NR_DPUS);
 
         system.load(DPU_OURS);
         cout<<"OURS PROGRAM ALLOCATED"<<endl;
 
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             auto dpu = system.dpus()[i];
-            populate_mram(*dpu, graph, i);
+            populate_mram(*dpu, subgraphs[i], i);
         }
         begin = chrono::steady_clock::now();
         system.exec();
@@ -124,6 +125,8 @@ int main(int argc, char** argv) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
         }
+
+        cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
 
     } catch (const DpuError & e) {
