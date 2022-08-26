@@ -113,15 +113,15 @@ int main(int argc, char** argv) {
         system.load(DPU_OURS);
         cout<<"OURS PROGRAM ALLOCATED"<<endl;
 
-        int id = 0;
-        DPU_FOREACH (system, auto dpu) {
-            populate_mram(*dpu, graph, id);
-            id++;
+        for (uint32_t i = 0; i < NR_DPUS; i++) {
+            auto dpu = system.dpus()[i];
+            populate_mram(*dpu, graph, i);
         }
         begin = chrono::steady_clock::now();
         system.exec();
         end = chrono::steady_clock::now();
-        DPU_FOREACH (system, auto dpu) {
+        for (uint32_t i = 0; i < NR_DPUS; i++) {
+            auto dpu = system.dpus()[i];
             dpu->log(cout);
         }
 
