@@ -27,7 +27,7 @@ using namespace std;
 #define DPU_OURS "./bin/pr_ours"
 #endif
 
-vector<DPUGraph> dpu_param(1);
+vector<DPUGraph> dpu_param(NR_DPUS);
 
 void populate_mram(DpuSetOps& dpu, Graph& graph) {
     dpu_param[0].num_v = graph.num_v;
@@ -47,6 +47,19 @@ void populate_mram(DpuSetOps& dpu, Graph& graph) {
 
 void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
     // TO-DO
+    dpu_param[0].num_v = graph.num_v;
+    dpu_param[0].num_e = graph.num_e;
+    dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+    dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(graph.row_ptr.size() * 4);
+    dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(graph.col_idx.size() * 4);
+    dpu_param[0].out_deg_start = dpu_param[0].value_start + static_cast<unsigned>(graph.out_deg.size() * 4);
+    dpu_param[0].output_start = dpu_param[0].out_deg_start + static_cast<unsigned>(graph.value.size() * 4);
+
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].row_ptr_start, graph.row_ptr, static_cast<unsigned>(graph.row_ptr.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].col_idx_start, graph.col_idx, static_cast<unsigned>(graph.col_idx.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].value_start, graph.value, static_cast<unsigned>(graph.value.size() * 4));
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].out_deg_start, graph.out_deg, static_cast<unsigned>(graph.out_deg.size() * 4));
 }
 
 int main(int argc, char** argv) {
@@ -85,17 +98,33 @@ int main(int argc, char** argv) {
         dpu_baseline->log(cout);
 
         vector<vector<float>> result(1);
-	result.front().resize(static_cast<unsigned>(graph.value.size()));
+        result.front().resize(static_cast<unsigned>(graph.value.size()));
         dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * 4), DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].output_start);
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         cout<<"PR CHECK"<<endl;
-	
+
         for (int i = 0; i < 5; i++)
             cout<< result.front()[i] <<endl;
-	
+
         // TO-DO : ours
+
+        system.load(DPU_OURS);
+        cout<<"OURS PROGRAM ALLOCATED"<<endl;
+
+        int id = 0;
+        DPU_FOREACH (system, auto dpu) {
+            populate_mram(*dpu, graph, id);
+            id++;
+        }
+        begin = chrono::steady_clock::now();
+        system.exec();
+        end = chrono::steady_clock::now();
+        DPU_FOREACH (system, auto dpu) {
+            dpu->log(cout);
+        }
+
 
     } catch (const DpuError & e) {
         cerr << e.what() << endl;

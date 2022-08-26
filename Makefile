@@ -2,7 +2,7 @@ DPU_DIR := dpu
 HOST_DIR := host
 BUILDDIR ?= bin
 NR_TASKLETS ?= 1
-NR_DPUS ?= 1
+NR_DPUS ?= 2
 
 HOST_TARGET := ${BUILDDIR}/host
 BASE_TARGET := ${BUILDDIR}/pr_baseline
@@ -28,6 +28,9 @@ ${HOST_TARGET}: ${HOST_SOURCES} ${COMMON_INCLUDES}
 
 ${BASE_TARGET}: ${BASE_SOURCES} ${COMMON_INCLUDES}
 	dpu-upmem-dpurte-clang ${DPU_FLAGS} -o $@ ${BASE_SOURCES}
+
+${OURS_TARGET}: ${OURS_SOURCES} ${COMMON_INCLUDES}
+	dpu-upmem-dpurte-clang ${DPU_FLAGS} -o $@ ${OURS_SOURCES}
 
 clean:
 	$(RM) -r $(BUILDDIR)
