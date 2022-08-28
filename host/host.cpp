@@ -43,7 +43,7 @@ void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id][0].out_deg_start, graph.out_deg[id]);
 }
 
-void populate_mram(DpuSet& dpu, Graph& graph) {
+void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx);
@@ -55,6 +55,8 @@ int main(int argc, char** argv) {
     // read graph file
     string csr_path;
     string output_path;
+
+    chrono::steady_clock::time_point begin, end;
 
     int opt = 0;
     while((opt = getopt(argc, argv, "i:o:")) != EOF) {
@@ -80,22 +82,29 @@ int main(int argc, char** argv) {
         cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
 
         dpu_baseline->load(DPU_BASELINE);
+        begin = chrono::steady_clock::now();
         populate_mram(*dpu_baseline, graph);
-        chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+        end = chrono::steady_clock::now();
+        cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+        begin = chrono::steady_clock::now();
         dpu_baseline->exec();
-        chrono::steady_clock::time_point end = chrono::steady_clock::now();
+        end = chrono::steady_clock::now();
         dpu_baseline->log(cout);
 
-        vector<vector<float>> result(1);
-        result.front().resize(static_cast<unsigned>(graph.value[0].size()));
+        vector<vector<float>> result(NR_DPUS);
+        for (uint32_t i = 0; i < NR_DPUS; i++)
+            result[i].resize(static_cast<unsigned>(graph.value[0].size()));
+
         dpu_baseline->copy(result, static_cast<unsigned>(graph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         cout<<"PR CHECK"<<endl;
 
-        for (int i = 0; i < 5; i++)
-            cout<< result.front()[i] <<endl;
+        for (uint32_t i = 0; i < 5; i++)
+            cout<< result[0][i] <<endl;
+
+        cout<<endl;
 
         // TO-DO : ours
         Graph subgraphs = divide_graph(graph, NR_DPUS);
@@ -103,28 +112,56 @@ int main(int argc, char** argv) {
         system.load(DPU_OURS);
         cout<<"OURS PROGRAM ALLOCATED"<<endl;
 
+        begin = chrono::steady_clock::now();
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             auto dpu = system.dpus()[i];
             populate_mram(*dpu, subgraphs, i);
         }
+        end = chrono::steady_clock::now();
+        cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+
         begin = chrono::steady_clock::now();
         system.exec();
         end = chrono::steady_clock::now();
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
+        }
+
+        cout<<"PR CHECK"<<endl;
+        for (uint32_t i = 0; i < NR_DPUS; i++) {
+            auto dpu = system.dpus()[i];
+            dpu->copy(result, static_cast<unsigned>(subgraph.value[i].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].output_start)
+            for (uint32_t j = 0; j < 5; j++) {
+                cout<<result[0][j]<<endl;
+            }
+            cout<<endl;
         }
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         cout<<"OURS PROGRAM ALLOCATED (PARALLEL)"<<endl;
-        populate_mram(system, subgraphs);
+        begin = chrono::steady_clock::now();
+        populate_mram_parallel(system, subgraphs);
+        end = chrono::steady_clock::now();
+
+        cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+
         begin = chrono::steady_clock::now();
         system.exec();
         end = chrono::steady_clock::now();
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
+        }
+
+        cout<<"PR CHECK"<<endl;
+        system.copy(result, static_cast<unsigned>(subgraph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start)
+        for (uint32_t i = 0; i < NR_DPUS; i++) {
+            for (uint32_t j = 0; j < 5; j++) {
+                cout<<result[i][j]<<endl;
+            }
+            cout<<endl;
         }
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;

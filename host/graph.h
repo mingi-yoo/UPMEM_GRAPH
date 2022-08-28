@@ -135,7 +135,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
 
             subgraph.row_ptr[i][0] = 0;
-            uint32_t bias = graph.row_ptr[i][i*unit_v];
+            uint32_t bias = graph.row_ptr[0][i*unit_v];
             uint32_t idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
@@ -162,11 +162,13 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     // set offset
 
     for (uint32_t i = 0; i < n; i++) {
-        graph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-        graph.dpu_param[i][0].col_idx_start = graph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_max * 4);
-        graph.dpu_param[i][0].value_start = graph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_max * 4);
-        graph.dpu_param[i][0].out_deg_start = graph.dpu_param[i][0].value_start + static_cast<unsigned>(graph.out_deg[0].size() * 4);
-        graph.dpu_param[i][0].output_start = graph.dpu_param[i][0].out_deg_start + static_cast<unsigned>(graph.value[0].size() * 4);
+        subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+        subgraph.row_ptr[i].resize(row_ptr_max);
+        subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_max * 4);
+        subgraph.col_idx[i].resize(col_idx_max);
+        subgraph.dpu_param[i][0].value_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_max * 4);
+        subgraph.dpu_param[i][0].out_deg_start = subgraph.dpu_param[i][0].value_start + static_cast<unsigned>(graph.out_deg[0].size() * 4);
+        subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].out_deg_start + static_cast<unsigned>(graph.value[0].size() * 4);
     }
 
     return subgraph;
