@@ -36,11 +36,11 @@ int main() {
     uint32_t out_deg_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->out_deg_start;
     uint32_t output_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->output_start;
 
-    uint32_t num_v_per_tasklet = ROUND_UP_TO_MULTIPLE_OF_2(g_info->num_v_origin / NR_TASKLETS + 1);
+    uint32_t num_v_per_tasklet = ROUND_UP_TO_MULTIPLE_OF_2(g_info->num_v / NR_TASKLETS + 1);
     uint32_t row_start = me()*num_v_per_tasklet;
 
     if (me() == NR_TASKLETS - 1)
-        num_v_per_tasklet = g_info->num_v_origin - ROUND_UP_TO_MULTIPLE_OF_2(g_info->num_v_origin / NR_TASKLETS + 1);
+        num_v_per_tasklet = g_info->num_v - (NR_TASKLETS - 1) * ROUND_UP_TO_MULTIPLE_OF_2(g_info->num_v / NR_TASKLETS + 1);
     
     seqreader_t row_ptr_reader;
     uint32_t* row_ptr = seqread_init(seqread_alloc(), (__mram_ptr void*)(row_ptr_m + row_start*sizeof(uint32_t)), &row_ptr_reader);
