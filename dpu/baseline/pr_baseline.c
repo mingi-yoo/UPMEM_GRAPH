@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <float.h>
+#include <math.h>
 
 #include <alloc.h>
 #include <barrier.h>
@@ -13,13 +14,14 @@
 
 #include "../../support/common.h"
 
-//BARRIER_INIT(my_barrier, NR_TASKLETS);
+BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 int main() {
     // reset MRAM heap
-    //if (me() == 0)
-    mem_reset();
-   // barrier_wait(&my_barrier);
+    if (me() == 0)
+        mem_reset();
+
+    barrier_wait(&my_barrier);
 
     // load graph data offset information
     uint32_t g_info_m = (uint32_t) DPU_MRAM_HEAP_POINTER;
@@ -35,11 +37,18 @@ int main() {
     uint32_t out_deg_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->out_deg_start;
     uint32_t output_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->output_start;
 
-    seqreader_t row_ptr_reader;
-    uint32_t* row_ptr = seqread_init(seqread_alloc(), (__mram_ptr void*)row_ptr_m, &row_ptr_reader);
+    uint32_t num_v_per_tasklet = ROUND_UP_TO_MULTIPLE_OF_2(ceil((float)g_info->num_v_origin / NR_TASKLETS));
+    uint32_t row_start = me()*num_v_per_tasklet;
 
+    if (me() == NR_TASKLETS - 1)
+        num_v_per_tasklet = g_info->num_v_origin - ROUND_UP_TO_MULTIPLE_OF_2(ceil((float)g_info->num_v_origin / NR_TASKLETS));
+    
+    seqreader_t row_ptr_reader;
+    uint32_t* row_ptr = seqread_init(seqread_alloc(), (__mram_ptr void*)(row_ptr_m + row_start*sizeof(uint32_t)), &row_ptr_reader);
+
+    uint32_t col_start = *row_ptr;
     seqreader_t col_idx_reader;
-    uint32_t* col_idx = seqread_init(seqread_alloc(), (__mram_ptr void*)col_idx_m, &col_idx_reader);
+    uint32_t* col_idx = seqread_init(seqread_alloc(), (__mram_ptr void*)(col_idx_m + col_start*sizeof(uint32_t)), &col_idx_reader);
 
     uint32_t value_cache_size = 64;
     uint32_t out_deg_cache_size = 64;
@@ -61,7 +70,7 @@ int main() {
 
     uint32_t cur_cache_idx = 0;
 
-    for (uint32_t i = 0; i < g_info->num_v; i++) {
+    for (uint32_t i = 0; i < num_v_per_tasklet; i++) {
         row_ptr = seqread_get(row_ptr, sizeof(uint32_t), &row_ptr_reader);
         uint32_t in_deg = *row_ptr - row_prev;
         float incoming_total = 0;
@@ -82,8 +91,8 @@ int main() {
 
         row_prev = *row_ptr;
         out_value = base_score + kdamp * incoming_total;
-        uint32_t output_idx = i/output_cache_size;
-        uint32_t output_offset = i%output_cache_size;
+        uint32_t output_idx = (i + row_start)/output_cache_size;
+        uint32_t output_offset = (i + row_start)%output_cache_size;
         output[output_offset] = out_value;
         if (output_idx == 0 && output_offset < 10)
             printf("DPU RESULT: %f\n",out_value);
