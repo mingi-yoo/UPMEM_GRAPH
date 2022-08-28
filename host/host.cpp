@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
         dpu_baseline->log(cout);
 
         vector<vector<float>> result(1);
-        result.front().resize(static_cast<unsigned>(graph.value.size()));
-        dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * 4), DPU_MRAM_HEAP_POINTER_NAME, dpu_param[0].output_start);
+        result.front().resize(static_cast<unsigned>(graph.value[0].size()));
+        dpu_baseline->copy(result, static_cast<unsigned>(graph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
 
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
         cout<<"OURS PROGRAM ALLOCATED (PARALLEL)"<<endl;
-        populate_mram_parallel(system, subgraphs);
+        populate_mram(system, subgraphs);
         begin = chrono::steady_clock::now();
         system.exec();
         end = chrono::steady_clock::now();

@@ -116,7 +116,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[i*unit_v]; j < graph.row_ptr[(i+1)*unit_v]; j++) {
+            for (uint32_t j = graph.row_ptr[i][i*unit_v]; j < graph.row_ptr[i][(i+1)*unit_v]; j++) {
                 subgraph.col_idx[i][idx] = graph.col_idx[i][j];
                 idx++;
             }
@@ -127,7 +127,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         }
         else {
             subgraph.dpu_param[i][0].num_v = last_v;
-            subgraph.dpu_param[i][0].num_e = graph.row_ptr[0][graph.num_v] - graph.row_ptr[0][i*unit_v];
+            subgraph.dpu_param[i][0].num_e = graph.row_ptr[0][graph.dpu_param[0][0].num_v] - graph.row_ptr[0][i*unit_v];
 
             subgraph.row_ptr[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_v+1));
             subgraph.col_idx[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_e));
@@ -144,7 +144,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[i*unit_v]; j < graph.row_ptr[(i+1)*unit_v]; j++) {
+            for (uint32_t j = graph.row_ptr[i][i*unit_v]; j < graph.row_ptr[i][(i+1)*unit_v]; j++) {
                 subgraph.col_idx[i][idx] = graph.col_idx[i][j];
                 idx++;
             }
