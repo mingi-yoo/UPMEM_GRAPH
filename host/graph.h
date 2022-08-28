@@ -103,21 +103,21 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
 
             subgraph.row_ptr[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_v+1));
             subgraph.col_idx[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_e));
-            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[i][0].num_v));
-            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[i][0].num_v));
+            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
+            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
 
             subgraph.row_ptr[i][0] = 0;
-            uint32_t bias = graph.row_ptr[i][i*unit_v];
+            uint32_t bias = graph.row_ptr[0][i*unit_v];
             uint32_t idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
-                subgraph.row_ptr[i][idx] = graph.row_ptr[i][j] - bias;
+                subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - bias;
                 idx++;         
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[i][i*unit_v]; j < graph.row_ptr[i][(i+1)*unit_v]; j++) {
-                subgraph.col_idx[i][idx] = graph.col_idx[i][j];
+            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0][(i+1)*unit_v]; j++) {
+                subgraph.col_idx[i][idx] = graph.col_idx[0][j];
                 idx++;
             }
 
@@ -131,21 +131,21 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
 
             subgraph.row_ptr[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_v+1));
             subgraph.col_idx[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_e));
-            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[i][0].num_v));
-            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[i][0].num_v));
+            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
+            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
 
             subgraph.row_ptr[i][0] = 0;
             uint32_t bias = graph.row_ptr[i][i*unit_v];
             uint32_t idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
-                subgraph.row_ptr[i][idx] = graph.row_ptr[i][j] - bias;
+                subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - bias;
                 idx++;         
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[i][i*unit_v]; j < graph.row_ptr[i][(i+1)*unit_v]; j++) {
-                subgraph.col_idx[i][idx] = graph.col_idx[i][j];
+            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0][(i+1)*unit_v]; j++) {
+                subgraph.col_idx[i][idx] = graph.col_idx[0][j];
                 idx++;
             }
 
