@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
         cout<<"PR CHECK"<<endl;
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             auto dpu = system.dpus()[i];
-            dpu->copy(result, static_cast<unsigned>(subgraph.value[i].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].output_start)
+            dpu->copy(result, static_cast<unsigned>(subgraphs.value[i].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[i][0].output_start)
             for (uint32_t j = 0; j < 5; j++) {
                 cout<<result[0][j]<<endl;
             }
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
         }
 
         cout<<"PR CHECK"<<endl;
-        system.copy(result, static_cast<unsigned>(subgraph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start)
+        system.copy(result, static_cast<unsigned>(subgraphs.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[0][0].output_start)
         for (uint32_t i = 0; i < NR_DPUS; i++) {
             for (uint32_t j = 0; j < 5; j++) {
                 cout<<result[i][j]<<endl;
