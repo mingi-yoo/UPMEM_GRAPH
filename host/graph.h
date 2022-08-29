@@ -90,8 +90,10 @@ static Graph read_csr(string csr_path) {
 static Graph divide_graph(Graph& graph, uint32_t n) {
     Graph subgraph;
 
-    uint32_t unit_v = ceil((float)graph.dpu_param[0][0].num_v/n);
-    uint32_t last_v = graph.dpu_param[0][0].num_v - (n-1) * unit_v;
+    uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
+
+    uint32_t unit_v = ceil((float)num_v_origin/n);
+    uint32_t last_v = num_v_origin - (n-1) * unit_v;
 
     // check max row & col size
     uint32_t row_ptr_max = 0;
@@ -107,7 +109,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         if (i != n-1)
             num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
         else
-            num_e = graph.row_ptr[0].back() -  graph.row_ptr[0][i*unit_v];
+            num_e = graph.row_ptr[0][num_v_origin] -  graph.row_ptr[0][i*unit_v];
 
         if (col_idx_max < num_e)
             col_idx_max = num_e;
@@ -124,7 +126,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
 
         DPUGraph dpu_param_temp;
 
-        dpu_param_temp.num_v_origin = graph.dpu_param[0][0].num_v;
+        dpu_param_temp.num_v_origin = num_v_origin;
         if (i != n-1) {
             dpu_param_temp.num_v = unit_v;
             dpu_param_temp.num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
@@ -150,7 +152,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         }
         else {
             dpu_param_temp.num_v = last_v;
-            dpu_param_temp.num_e = graph.row_ptr[0].back() - graph.row_ptr[0][i*unit_v];
+            dpu_param_temp.num_e = graph.row_ptr[0][num_v_origin] - graph.row_ptr[0][i*unit_v];
 
             row_ptr.push_back(0);
             uint32_t bias = graph.row_ptr[0][i*unit_v];
@@ -162,7 +164,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0].back(); j++) {
+            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0][num_v_origin]; j++) {
                 col_idx.push_back(graph.col_idx[0][j]);
                 idx++;
             }
