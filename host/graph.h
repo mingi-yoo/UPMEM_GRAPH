@@ -25,56 +25,64 @@ static Graph read_csr(string csr_path) {
 
     ifstream csr(csr_path);
 
-    graph.dpu_param.resize(1);
-    graph.row_ptr.resize(1);
-    graph.col_idx.resize(1);
-    graph.out_deg.resize(1);
-    graph.value.resize(1);
+    vector<DPUGraph> dpu_param;
+    vector<uint32_t> row_ptr;
+    vector<uint32_t> col_idx;
+    vector<uint32_t> out_deg;
+    vector<float> value;
 
     if (csr.is_open()) {
-        graph.dpu_param[0].resize(1);
-        csr >> graph.dpu_param[0][0].num_v >> graph.dpu_param[0][0].num_e;
-        graph.dpu_param[0][0].num_v_origin = graph.dpu_param[0][0].num_v;
+        DPUGraph dpu_param_temp;
 
-        graph.row_ptr[0].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v+1));
-        graph.col_idx[0].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_e));
-        graph.out_deg[0].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-        graph.value[0].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
+        csr >> dpu_param_temp.num_v >> dpu_param_temp.num_e;
+        dpu_param_temp.num_v_origin = dpu_param_temp.num_v;
 
-        for (uint32_t i = 0; i <= graph.dpu_param[0][0].num_v; i++) {
+        for (uint32_t i = 0; i <= dpu_param_temp.num_v; i++) {
             uint32_t row;
             csr >> row;
-            graph.row_ptr[0][i] = row;
+            row_ptr.push_back(row);
         }
 
-        for (uint32_t i = 0; i < graph.dpu_param[0][0].num_e; i++) {
+        for (uint32_t i = 0; i < dpu_param_temp.num_e; i++) {
             uint32_t col;
             csr >> col;
-            graph.col_idx[0][i] = col;
+            col_idx.push_back(col);
         }
 
-        for (uint32_t i = 0; i < graph.dpu_param[0][0].num_v; i++) {
+        for (uint32_t i = 0; i < dpu_param_temp.num_v; i++) {
             uint32_t deg;
             csr >> deg;
-            graph.out_deg[0][i] = deg;
+            out_deg.push_back(deg);
         }
 
-        for (uint32_t i = 0; i < graph.dpu_param[0][0].num_v; i++)
-            graph.value[0][i] = 1.0f / graph.dpu_param[0][0].num_v;
+        for (uint32_t i = 0; i < dpu_param_temp.num_v; i++)
+            value.push_back(1.0f / dpu_param_temp.num_v);
 
         csr.close();
+
+        dpu_param.push_back(dpu_param_temp);
 
     }
     else
         throw invalid_argument("Cannot open graph");
 
-    // set offset
-    graph.dpu_param[0][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-    graph.dpu_param[0][0].col_idx_start = graph.dpu_param[0][0].row_ptr_start + static_cast<unsigned>(graph.row_ptr[0].size() * 4);
-    graph.dpu_param[0][0].value_start = graph.dpu_param[0][0].col_idx_start + static_cast<unsigned>(graph.col_idx[0].size() * 4);
-    graph.dpu_param[0][0].out_deg_start = graph.dpu_param[0][0].value_start + static_cast<unsigned>(graph.out_deg[0].size() * 4);
-    graph.dpu_param[0][0].output_start = graph.dpu_param[0][0].out_deg_start + static_cast<unsigned>(graph.value[0].size() * 4);
+    row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v+1));
+    col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_e));
+    out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
+    value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
 
+    // set offset
+    dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+    dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(row_ptr.size() * 4);
+    dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(col_idx.size() * 4);
+    dpu_param[0].out_deg_start = dpu_param[0].value_start + static_cast<unsigned>(out_deg.size() * 4);
+    dpu_param[0].output_start = dpu_param[0].out_deg_start + static_cast<unsigned>(value.size() * 4);
+
+    graph.dpu_param.push_back(dpu_param);
+    graph.row_ptr.push_back(row_ptr);
+    graph.col_idx.push_back(col_idx);
+    graph.value.push_back(value);
+    graph.out_deg.push_back(out_deg);
 
     return graph;
 }
@@ -85,90 +93,99 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     uint32_t unit_v = ceil((float)graph.dpu_param[0][0].num_v/n);
     uint32_t last_v = graph.dpu_param[0][0].num_v - (n-1) * unit_v;
 
-    subgraph.dpu_param.resize(n);
-    subgraph.row_ptr.resize(n);
-    subgraph.col_idx.resize(n);
-    subgraph.out_deg.resize(n);
-    subgraph.value.resize(n);
-
+    // check max row & col size
     uint32_t row_ptr_max = 0;
     uint32_t col_idx_max = 0;
 
+    if (unit_v > last_v)
+        row_ptr_max = ROUND_UP_TO_MULTIPLE_OF_2(unit_v+1);
+    else
+        row_ptr_max = ROUND_UP_TO_MULTIPLE_OF_2(last_v+1);
+
     for (uint32_t i = 0; i < n; i++) {
-        subgraph.dpu_param[i].resize(1);
-        subgraph.dpu_param[i][0].num_v_origin = graph.dpu_param[0][0].num_v;
+        uint32_t num_e;
+        if (i != n-1)
+            num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
+        else
+            num_e = graph.row_ptr[0].back() -  graph.row_ptr[0][i*unit_v];
+
+        if (col_idx_max < num_e)
+            col_idx_max = num_e;
+    }
+
+    col_idx_max = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
+
+    for (uint32_t i = 0; i < n; i++) {
+        vector<DPUGraph> dpu_param;
+        vector<uint32_t> row_ptr;
+        vector<uint32_t> col_idx;
+        vector<uint32_t> out_deg;
+        vector<float> value;
+
+        DPUGraph dpu_param_temp;
+
+        dpu_param_temp.num_v_origin = graph.dpu_param[0][0].num_v;
         if (i != n-1) {
-            subgraph.dpu_param[i][0].num_v = unit_v;
-            subgraph.dpu_param[i][0].num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
+            dpu_param_temp.num_v = unit_v;
+            dpu_param_emp.num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
 
-            subgraph.row_ptr[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_v+1));
-            subgraph.col_idx[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_e));
-            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-
-            subgraph.row_ptr[i][0] = 0;
+            row_ptr.push_back(0);
             uint32_t bias = graph.row_ptr[0][i*unit_v];
             uint32_t idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
-                subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - bias;
+                row_ptr.push_back(graph.row_ptr[0][j] - bias);
                 idx++;         
             }
 
             idx = 0;
             for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0][(i+1)*unit_v]; j++) {
-                subgraph.col_idx[i][idx] = graph.col_idx[0][j];
+                col_idx.push_back(graph.col_idx[0][j]);
                 idx++;
             }
 
-            subgraph.out_deg[i] = graph.out_deg[0];
-            subgraph.value[i] = graph.value[0];
+            out_deg = graph.out_deg[0];
+            value = graph.value[0];
 
         }
         else {
-            subgraph.dpu_param[i][0].num_v = last_v;
-            subgraph.dpu_param[i][0].num_e = graph.row_ptr[0][graph.dpu_param[0][0].num_v] - graph.row_ptr[0][i*unit_v];
+            dpu_param_temp.num_v = last_v;
+            dpu_param_temp.num_e = graph.row_ptr[0].back() - graph.row_ptr[0][i*unit_v];
 
-            subgraph.row_ptr[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_v+1));
-            subgraph.col_idx[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[i][0].num_e));
-            subgraph.out_deg[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-            subgraph.value[i].resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-
-            subgraph.row_ptr[i][0] = 0;
+            row_ptr.push_back(0);
             uint32_t bias = graph.row_ptr[0][i*unit_v];
             uint32_t idx = 1;
 
-            for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
+            for (uint32_t j = i*unit_v + 1; j <= last_v; j++) {
                 subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - bias;
                 idx++;         
             }
 
             idx = 0;
-            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0][(i+1)*unit_v]; j++) {
+            for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0].back(); j++) {
                 subgraph.col_idx[i][idx] = graph.col_idx[0][j];
                 idx++;
             }
 
-            subgraph.out_deg[i] = graph.out_deg[0];
-            subgraph.value[i] = graph.value[0];
+            out_deg = graph.out_deg[0];
+            value = graph.value[0];
         }
+        dpu_param.push_back(dpu_param_temp);
+        row_ptr.resize(row_ptr_max);
+        col_idx.resize(col_idx_max);
 
-        if (subgraph.row_ptr[i].size() > row_ptr_max)
-            row_ptr_max = subgraph.row_ptr[i].size();
-        if (subgraph.col_idx[i].size() > col_idx_max)
-            col_idx_max = subgraph.col_idx[i].size();
-    }
+        // set offset
+        dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+        dpu_param[0].col_idx_start = dpu_param[0].row_ptr_start + static_cast<unsigned>(row_ptr_max * 4);
+        dpu_param[0].value_start = dpu_param[0].col_idx_start + static_cast<unsigned>(col_idx_max * 4);
+        dpu_param[0].out_deg_start = dpu_param[0].value_start + static_cast<unsigned>(out_deg.size() * 4);
+        dpu_param[0].output_start = dpu_param[0].out_deg_start + static_cast<unsigned>(value.size() * 4);
 
-    // set offset
-
-    for (uint32_t i = 0; i < n; i++) {
-        subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-        subgraph.row_ptr[i].resize(row_ptr_max);
-        subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_max * 4);
-        subgraph.col_idx[i].resize(col_idx_max);
-        subgraph.dpu_param[i][0].value_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_max * 4);
-        subgraph.dpu_param[i][0].out_deg_start = subgraph.dpu_param[i][0].value_start + static_cast<unsigned>(graph.out_deg[0].size() * 4);
-        subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].out_deg_start + static_cast<unsigned>(graph.value[0].size() * 4);
+        subgraph.dpu_param.push_back(dpu_param);
+        subgraph.row_ptr.push_back(row_ptr);
+        subgraph.col_idx.push_back(col_idx);
+        subgraph.value.push_back(value);
+        subgraph.out_deg.push_back(out_deg);
     }
 
     return subgraph;
