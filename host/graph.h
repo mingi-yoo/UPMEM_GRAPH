@@ -66,10 +66,10 @@ static Graph read_csr(string csr_path) {
     else
         throw invalid_argument("Cannot open graph");
 
-    row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v+1));
-    col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_e));
-    out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
-    value.resize(ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0][0].num_v));
+    row_ptr.resize(ROUND_UP_TO_MULTIPLE_OF_2(dpu_param[0].num_v+1));
+    col_idx.resize(ROUND_UP_TO_MULTIPLE_OF_2(dpu_param[0].num_e));
+    out_deg.resize(ROUND_UP_TO_MULTIPLE_OF_2(dpu_param[0].num_v));
+    value.resize(ROUND_UP_TO_MULTIPLE_OF_2(dpu_param[0].num_v));
 
     // set offset
     dpu_param[0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
@@ -127,7 +127,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         dpu_param_temp.num_v_origin = graph.dpu_param[0][0].num_v;
         if (i != n-1) {
             dpu_param_temp.num_v = unit_v;
-            dpu_param_emp.num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
+            dpu_param_temp.num_e = graph.row_ptr[0][(i+1)*unit_v] - graph.row_ptr[0][i*unit_v];
 
             row_ptr.push_back(0);
             uint32_t bias = graph.row_ptr[0][i*unit_v];
