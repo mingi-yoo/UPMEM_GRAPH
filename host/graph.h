@@ -157,13 +157,13 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             uint32_t idx = 1;
 
             for (uint32_t j = i*unit_v + 1; j <= last_v; j++) {
-                subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - bias;
+                row_ptr.push_back(graph.row_ptr[0][j] - bias);
                 idx++;         
             }
 
             idx = 0;
             for (uint32_t j = graph.row_ptr[0][i*unit_v]; j < graph.row_ptr[0].back(); j++) {
-                subgraph.col_idx[i][idx] = graph.col_idx[0][j];
+                col_idx.push_back(graph.col_idx[0][j]);
                 idx++;
             }
 
