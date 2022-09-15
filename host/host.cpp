@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     free_graph(graph);
 
     // Ours
-    Graph* subgraph = divide_graph(graph);
+    Graph* subgraph = divide_graph(graph, NR_DPUS);
 
     DPU_ASSERT(dpu_alloc(NR_DPUS, NULL, &dpu_set));
     DPU_ASSERT(dpu_load(dpu_set, DPU_OURS, NULL));
@@ -136,6 +136,12 @@ int main(int argc, char** argv) {
         }
         cout<<endl;
     }
+
+    for (uint32_t i = 0; i < NR_DPUS; i++) {
+        free(subgraph[i]);
+    }
+
+    delete [] subgraph;
 
     // // TODO
     // vector<vector<float>> result(NR_DPUS);

@@ -120,14 +120,14 @@ static Graph* divide_graph(Graph& graph, uint32_t n) {
             uint32_t bias = graph.row_ptr[i*unit_v];
             uint32_t idx = 1;
 
-            for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit _v; j++) {
+            for (uint32_t j = i*unit_v + 1; j <= (i+1)*unit_v; j++) {
                 subgraph[i].row_ptr[idx] = graph.row_ptr[j] - bias;
                 idx++;
             }
 
             idx = 0;
             for (uint32_t j = graph.row_ptr[i*unit_v]; j < graph.row_ptr[(i+1)*unit_v]; j++) {
-                subgraph.col_idx[idx] = graph.col_idx[j];
+                subgraph[i].col_idx[idx] = graph.col_idx[j];
                 idx++;
             }
         }
@@ -152,13 +152,13 @@ static Graph* divide_graph(Graph& graph, uint32_t n) {
 
             idx = 0;
             for (uint32_t j = graph.row_ptr[i*unit_v]; j < graph.row_ptr[num_v_origin]; j++) {
-                subgraph.col_idx[idx] = graph.col_idx[j];
+                subgraph[i].col_idx[idx] = graph.col_idx[j];
                 idx++;
             }
         }
         for (uint32_t j = 0; j < num_v_origin; j++){
-           subgraph[i].out_deg[j] = graph.out_deg[j]
-           subgraph[i].value[j] = graph.value[j] 
+           subgraph[i].out_deg[j] = graph.out_deg[j];
+           subgraph[i].value[j] = graph.value[j]; 
         }
 
         subgraph[i].dpu_param.row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
