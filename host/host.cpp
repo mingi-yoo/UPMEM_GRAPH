@@ -37,8 +37,8 @@ void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)&graph.dpu_param[id], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].row_ptr_start, (uint8_t*)&graph.row_ptr[id*row_ptr_size], graph.dpu_param[id].col_idx_start - graph.dpu_param[id].row_ptr_start));
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].col_idx_start, (uint8_t*)&graph.col_idx[id*col_idx_size], graph.dpu_param[id].value_start - graph.dpu_param[id].col_idx_start));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].value_start, (uint8_t*)&graph.value[id*value_size], graph.dpu_param[id].out_deg_start - graph.dpu_param[id].value_start));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].out_deg_start, (uint8_t*)&graph.out_deg[id*out_deg_size], graph.dpu_param[id].output_start - graph.dpu_param[id].out_deg_start));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].value_start, (uint8_t*)graph.value, graph.dpu_param[id].out_deg_start - graph.dpu_param[id].value_start));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].out_deg_start, (uint8_t*)graph.out_deg, graph.dpu_param[id].output_start - graph.dpu_param[id].out_deg_start));
 }
 
 void populate_mram(dpu_set_t& dpu, Graph& graph) {
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     uint32_t output_size = (graph.dpu_param[0].out_deg_start - graph.dpu_param[0].value_start) / sizeof(float);
     DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_log_read(dpu, stdout));
-        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[idx].output_start, (uint8_t*)subgraph.output[idx * output_size], output_size * sizeof(float)));
+        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[idx].output_start, (uint8_t*)&subgraph.output[idx * output_size], output_size * sizeof(float)));
     }
     cout<<"OUTPUT RECEIVED"<<endl;
     for (uint32_t i = 0; i < NR_DPUS; i++) {

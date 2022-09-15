@@ -114,6 +114,12 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     subgraph.value = new float[feature_size];
     subgraph.output = new float[output_size * n];
 
+    for (uint32_t i = 0; i < num_v_origin; i++){
+       subgraph.out_deg[i] = graph.out_deg[i];
+       subgraph.value[i] = graph.value[i]; 
+    }
+
+
     for (uint32_t i = 0; i < n; i++) {
         if (i != n-1) {
             subgraph.dpu_param[i].num_v = unit_v;
@@ -153,11 +159,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
                 idx++;
             }
         }
-        for (uint32_t j = 0; j < num_v_origin; j++){
-           subgraph.out_deg[i*feature_size + j] = graph.out_deg[j];
-           subgraph.value[i*feature_size + j] = graph.value[j]; 
-        }
-
+        
         subgraph.dpu_param[i].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
         subgraph.dpu_param[i].col_idx_start = subgraph.dpu_param[i].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i].value_start = subgraph.dpu_param[i].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
