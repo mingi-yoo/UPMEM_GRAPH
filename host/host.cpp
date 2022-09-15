@@ -53,13 +53,13 @@ void populate_mram_parallel(dpu_set_t& dpu_set, Graph& graph) {
     DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_prepare_xfer(dpu, &graph.dpu_param[idx]));
     }
-    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, 0, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)), DPU_XFER_DEFAULT));
 
     idx = 0;
     DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_prepare_xfer(dpu, &graph.row_ptr[idx*row_ptr_size]));
     }
-    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].row_start, row_ptr_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].row_ptr_start, row_ptr_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 
     idx = 0;
     DPU_FOREACH(dpu_set, dpu, idx) {
@@ -67,8 +67,8 @@ void populate_mram_parallel(dpu_set_t& dpu_set, Graph& graph) {
     }
     DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].col_idx_start, col_idx_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 
-    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].value_start, value_size * sizeof(float), DPU_XFER_DEFAULT));
-    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].out_deg_start, out_deg_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].value_start, value_size * sizeof(float), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].out_deg_start, out_deg_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 }
 
 int main(int argc, char** argv) {
