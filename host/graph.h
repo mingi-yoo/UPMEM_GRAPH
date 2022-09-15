@@ -25,6 +25,9 @@ static Graph read_csr(string csr_path) {
 
     ifstream csr(csr_path);
 
+    uint32_t row_ptr_size;
+    uint32_t col_idx_size;
+
     if (csr.is_open()) {
         csr >> graph.dpu_param.num_v >> graph.dpu_param.num_e;
         graph.dpu_param.num_v_origin = graph.dpu_param.num_v;
@@ -51,19 +54,19 @@ static Graph read_csr(string csr_path) {
             graph.value[i] = 1.0f / graph.dpu_param.num_v;
         };
 
+        // set offset
+        graph.dpu_param.row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+        graph.dpu_param.col_idx_start = graph.dpu_param.row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
+        graph.dpu_param.value_start = graph.dpu_param.col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        graph.dpu_param.out_deg_start = graph.dpu_param.value_start + static_cast<unsigned>(feature_size * sizeof(uint32_t));
+        graph.dpu_param.output_start = graph.dpu_param.out_deg_start + static_cast<unsigned>(feature_size * sizeof(float));
+
         csr.close();
 
     }
     else
         throw invalid_argument("Cannot open graph");
-
-    // set offset
-    graph.dpu_param.row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-    graph.dpu_param.col_idx_start = graph.dpu_param.row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
-    graph.dpu_param.value_start = graph.dpu_param.col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
-    graph.dpu_param.out_deg_start = graph.dpu_param.value_start + static_cast<unsigned>(feature_size * sizeof(uint32_t));
-    graph.dpu_param.output_start = graph.dpu_param.out_deg_start + static_cast<unsigned>(feature_size * sizeof(float));
-
+    
     return graph;
 }
 
