@@ -18,15 +18,13 @@ struct Graph {
     uint32_t* col_idx;
     uint32_t* out_deg;
     float* value;
+    float* output;
 };
 
 static Graph read_csr(string csr_path) {
     Graph graph;
 
     ifstream csr(csr_path);
-
-    uint32_t row_ptr_size;
-    uint32_t col_idx_size;
 
     if (csr.is_open()) {
         csr >> graph.dpu_param.num_v >> graph.dpu_param.num_e;
@@ -40,6 +38,7 @@ static Graph read_csr(string csr_path) {
         graph.col_idx = new uint32_t[col_idx_size];
         graph.out_deg = new uint32_t[feature_size];
         graph.value = new float[feature_size];
+        graph.output = new float[feature_size];
 
         for (uint32_t i = 0; i <= graph.dpu_param.num_v; i++) {
             csr >> graph.row_ptr[i];
@@ -66,7 +65,7 @@ static Graph read_csr(string csr_path) {
     }
     else
         throw invalid_argument("Cannot open graph");
-    
+
     return graph;
 }
 
@@ -75,6 +74,7 @@ void free_graph(Graph& graph) {
     delete [] graph.col_idx;
     delete [] graph.out_deg;
     delete [] graph.value;
+    delete [] graph.output;
 }
 
 // static Graph divide_graph(Graph& graph, uint32_t n) {

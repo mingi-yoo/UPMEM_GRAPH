@@ -1,4 +1,4 @@
-#include <dpu.h>
+#include <dpu>
 #include <dpu_log.h>
 
 #include <iomanip>
@@ -29,7 +29,7 @@ using namespace std;
 #endif
 
 void populate_mram(dpu_set_t& dpu, Graph& graph) {
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)&graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.row_ptr_start, (uint8_t*)graph.row_ptr, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v+1) * sizeof(uint32_t)));
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.col_idx_start, (uint8_t*)graph.col_idx, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_e) * sizeof(uint32_t)));
     DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.value_start, (uint8_t*)graph.value, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
@@ -90,7 +90,14 @@ int main(int argc, char** argv) {
     begin = chrono::steady_clock::now();
     DPU_ASSERT(dpu_launch(dpu_set, DPU_SYNCHRONOUS));
     end = chrono::steady_clock::now();
-    DPU_ASSERT(dpu_log_read(dpu, stdout));
+    cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+    DPU_FOREACH(dpu_set, dpu) {
+        DPU_ASSERT(dpu_log_read(dpu_set, stdout));
+    }
+    DPU_ASSERTI(dpu_copy_from(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.output_start, (uint8_t*)graph.output, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
+    cout<<"OUTPUT RECEIVED"<<endl;
+    for (uint32_t i = 0; i < 10; i++)
+        cout<<"DPU RESULT: "<<graph.output[i]<<endl;
 
     free_graph(graph);
 
