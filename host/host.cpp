@@ -67,8 +67,8 @@ void populate_mram_parallel(dpu_set_t& dpu_set, Graph& graph) {
     }
     DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].col_idx_start, col_idx_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 
-    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].value_start, value_size * sizeof(float), DPU_XFER_DEFAULT));
-    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].out_deg_start, out_deg_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].value_start, (uint8_t*)graph.value, value_size * sizeof(float), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].out_deg_start, (uint8_t*)graph.out_deg, dpu_out_deg_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 }
 
 int main(int argc, char** argv) {
