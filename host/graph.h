@@ -135,7 +135,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
             }
         }
         else {
-            subgraph.dpu_param.num_v = last_v;
+            subgraph.dpu_param[i].num_v = last_v;
 
             subgraph.row_ptr[i*row_ptr_size] = 0;
 

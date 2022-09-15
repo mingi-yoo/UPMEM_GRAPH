@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
     for (uint32_t i = 0; i < NR_DPUS; i++) {
         cout<<"DPU "<<i<<endl;
         for (uint32_t j = 0; j < 10; j++) {
-            cout<<"DPU RESULT: "<<subgraph[i].output[j]<<endl;
+            cout<<"DPU RESULT: "<<subgraph.output[i*output_size+j]<<endl;
         }
         cout<<endl;
     }
@@ -144,13 +144,7 @@ int main(int argc, char** argv) {
 
 
     free_graph(graph);
-    for (uint32_t i = 0; i < NR_DPUS; i++) {
-        free_graph(subgraph[i]);
-    }
-
-
-    delete [] subgraph;
-
+    free_graph(subgraph);
     // // TODO
     // vector<vector<float>> result(NR_DPUS);
     // for (uint32_t i = 0; i < NR_DPUS; i++)
