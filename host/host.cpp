@@ -28,15 +28,20 @@ using namespace std;
 #define DPU_OURS "./bin/pr_ours"
 #endif
 
-void populate_mram(dpu_set_t& dpu, Graph& graph) {
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)&graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.row_ptr_start, (uint8_t*)graph.row_ptr, graph.dpu_param.col_idx_start - graph.dpu_param.row_ptr_start));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.col_idx_start, (uint8_t*)graph.col_idx, graph.dpu_param.value_start - graph.dpu_param.col_idx_start));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.value_start, (uint8_t*)graph.value, graph.dpu_param.out_deg_start - graph.dpu_param.value_start));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.out_deg_start, (uint8_t*)graph.out_deg, graph.dpu_param.output_start - graph.dpu_param.out_deg_start));
+void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
+    uint32_t row_ptr_size = (graph.dpu_param[id].col_idx_start - graph.dpu_param[id].row_ptr_start) / sizeof(uint32_t);
+    uint32_t col_idx_size = (graph.dpu_param[id].value_start - graph.dpu_param[id].col_idx_start) / sizeof(uint32_t);
+    uint32_t value_size = (graph.dpu_param[id].out_deg_start - graph.dpu_param[id].value_start) / sizeof(float);
+    uint32_t out_deg_size = (graph.dpu_param[id].output_start - graph.dpu_param[id].out_deg_start) / sizeof(uint32_t);
+
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)&graph.dpu_param[id], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].row_ptr_start, (uint8_t*)&graph.row_ptr[id*row_ptr_size], graph.dpu_param[id].col_idx_start - graph.dpu_param[id].row_ptr_start));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].col_idx_start, (uint8_t*)&graph.col_idx[id*col_idx_size], graph.dpu_param[id].value_start - graph.dpu_param[id].col_idx_start));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].value_start, (uint8_t*)&graph.value[id*value_size], graph.dpu_param[id].out_deg_start - graph.dpu_param[id].value_start));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id].out_deg_start, (uint8_t*)&graph.out_deg[id*out_deg_size], graph.dpu_param[id].output_start - graph.dpu_param[id].out_deg_start));
 }
 
-void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
+void populate_mram(dpu_set_t& dpu, Graph& graph) {
     // dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param[id], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     // dpu.copy(DPU_MRAM_HEAP_POIsTER_NAME, graph.dpu_param[id][0].row_ptr_start, graph.row_ptr[id]);
     // dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id][0].col_idx_start, graph.col_idx[id]);
@@ -84,7 +89,7 @@ int main(int argc, char** argv) {
     cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
 
     begin = chrono::steady_clock::now();
-    populate_mram(dpu_set, graph);
+    populate_mram(dpu_set, graph, 0);
     end = chrono::steady_clock::now();
     cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
     begin = chrono::steady_clock::now();
@@ -93,17 +98,16 @@ int main(int argc, char** argv) {
     cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
     DPU_FOREACH(dpu_set, dpu) {
         DPU_ASSERT(dpu_log_read(dpu, stdout));
-        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.output_start, (uint8_t*)graph.output, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
+        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].output_start, (uint8_t*)graph.output, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_v) * sizeof(float)));
     }
     cout<<"OUTPUT RECEIVED"<<endl;
     for (uint32_t i = 0; i < 10; i++)
         cout<<"DPU RESULT: "<<graph.output[i]<<endl;
 
     DPU_ASSERT(dpu_free(dpu_set));
-    free_graph(graph);
 
     // Ours
-    Graph* subgraph = divide_graph(graph, NR_DPUS);
+    Graph subgraph = divide_graph(graph, NR_DPUS);
 
     DPU_ASSERT(dpu_alloc(NR_DPUS, NULL, &dpu_set));
     DPU_ASSERT(dpu_load(dpu_set, DPU_OURS, NULL));
@@ -112,9 +116,8 @@ int main(int argc, char** argv) {
 
     begin = chrono::steady_clock::now();
     uint32_t idx = 0;
-    DPU_FOREACH(dpu_set, dpu) {
-        populate_mram(dpu, subgraph[idx]);
-        idx++;
+    DPU_FOREACH(dpu_set, dpu, idx) {
+        populate_mram(dpu, subgraph, idx);
     }
     end = chrono::steady_clock::now();
     cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
@@ -123,10 +126,10 @@ int main(int argc, char** argv) {
     end = chrono::steady_clock::now();
     cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
     idx = 0;
-    DPU_FOREACH(dpu_set, dpu) {
+    uint32_t output_size = (graph.dpu_param[0].out_deg_start - graph.dpu_param[0].value_start) / sizeof(float);
+    DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_log_read(dpu, stdout));
-        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, subgraph[idx].dpu_param.output_start, (uint8_t*)subgraph[idx].output, ROUND_UP_TO_MULTIPLE_OF_2(subgraph[idx].dpu_param.num_v) * sizeof(float)));
-        idx++;
+        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[idx].output_start, (uint8_t*)subgraph.output[idx * output_size], output_size * sizeof(float)));
     }
     cout<<"OUTPUT RECEIVED"<<endl;
     for (uint32_t i = 0; i < NR_DPUS; i++) {
@@ -137,9 +140,14 @@ int main(int argc, char** argv) {
         cout<<endl;
     }
 
+    // OURS (parallel)
+
+
+    free_graph(graph);
     for (uint32_t i = 0; i < NR_DPUS; i++) {
-        free(subgraph[i]);
+        free_graph(subgraph[i]);
     }
+
 
     delete [] subgraph;
 
