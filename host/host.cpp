@@ -1,6 +1,8 @@
 #include <dpu.h>
 #include <dpu_log.h>
 
+#include <dpu>
+
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -30,11 +32,11 @@ using namespace std;
 #endif
 
 void populate_mram(dpu_set_t& dpu, Graph& graph) {
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param[0], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr[0]);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx[0]);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].value_start, graph.value[0]);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].out_deg_start, graph.out_deg[0]);
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)graph.dpu_param[0], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, (uint8_t*)graph.row_ptr[0], graph.row_ptr[0].size() * sizeof(uint32_t)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRMA_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, (uint8_t*)graph.col_idx[0], graph.col_idx[0].size() * sizeof(uint32_t)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRMA_HEAP_POINTER_NAME, graph.dpu_param[0][0].value_start, (uint8_t*)graph.value[0], graph.value[0].size() * sizeof(float)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRMA_HEAP_POINTER_NAME, graph.dpu_param[0][0].out_deg_start, (uint8_t*)graph.out_deg[0], graph.out_deg[0].size() * sizeof(uint32_t)));
 }
 
 void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
@@ -94,81 +96,81 @@ int main(int argc, char** argv) {
         end = chrono::steady_clock::now();
         DPU_ASSERT(dpu_log_read(dpu, stdout));
 
-        // TODO
-        vector<vector<float>> result(NR_DPUS);
-        for (uint32_t i = 0; i < NR_DPUS; i++)
-            result[i].resize(static_cast<unsigned>(graph.value[0].size()));
+        // // TODO
+        // vector<vector<float>> result(NR_DPUS);
+        // for (uint32_t i = 0; i < NR_DPUS; i++)
+        //     result[i].resize(static_cast<unsigned>(graph.value[0].size()));
 
-        dpu_baseline->copy(result, static_cast<unsigned>(graph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
+        // dpu_baseline->copy(result, static_cast<unsigned>(graph.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
 
-        cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+        // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
-        cout<<"PR CHECK"<<endl;
+        // cout<<"PR CHECK"<<endl;
 
-        for (uint32_t i = 0; i < 5; i++)
-            cout<< result[0][i] <<endl;
+        // for (uint32_t i = 0; i < 5; i++)
+        //     cout<< result[0][i] <<endl;
 
-        cout<<endl;
+        // cout<<endl;
 
-        // TO-DO : ours
-        Graph subgraphs = divide_graph(graph, NR_DPUS);
+        // // TO-DO : ours
+        // Graph subgraphs = divide_graph(graph, NR_DPUS);
 
-        system.load(DPU_OURS);
-        cout<<"OURS PROGRAM ALLOCATED"<<endl;
+        // system.load(DPU_OURS);
+        // cout<<"OURS PROGRAM ALLOCATED"<<endl;
 
-        begin = chrono::steady_clock::now();
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            auto dpu = system.dpus()[i];
-            populate_mram(*dpu, subgraphs, i);
-        }
-        end = chrono::steady_clock::now();
-        cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+        // begin = chrono::steady_clock::now();
+        // for (uint32_t i = 0; i < NR_DPUS; i++) {
+        //     auto dpu = system.dpus()[i];
+        //     populate_mram(*dpu, subgraphs, i);
+        // }
+        // end = chrono::steady_clock::now();
+        // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
 
-        begin = chrono::steady_clock::now();
-        system.exec();
-        end = chrono::steady_clock::now();
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            auto dpu = system.dpus()[i];
-            dpu->log(cout);
-        }
+        // begin = chrono::steady_clock::now();
+        // system.exec();
+        // end = chrono::steady_clock::now();
+        // for (uint32_t i = 0; i < NR_DPUS; i++) {
+        //     auto dpu = system.dpus()[i];
+        //     dpu->log(cout);
+        // }
 
-        cout<<"PR CHECK"<<endl;
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            auto dpu = system.dpus()[i];
-            dpu->copy(result, static_cast<unsigned>(subgraphs.value[i].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[i][0].output_start);
-            for (uint32_t j = 0; j < 5; j++) {
-                cout<<result[0][j]<<endl;
-            }
-            cout<<endl;
-        }
+        // cout<<"PR CHECK"<<endl;
+        // for (uint32_t i = 0; i < NR_DPUS; i++) {
+        //     auto dpu = system.dpus()[i];
+        //     dpu->copy(result, static_cast<unsigned>(subgraphs.value[i].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[i][0].output_start);
+        //     for (uint32_t j = 0; j < 5; j++) {
+        //         cout<<result[0][j]<<endl;
+        //     }
+        //     cout<<endl;
+        // }
 
-        cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+        // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
-        cout<<"OURS PROGRAM ALLOCATED (PARALLEL)"<<endl;
-        begin = chrono::steady_clock::now();
-        populate_mram_parallel(system, subgraphs);
-        end = chrono::steady_clock::now();
+        // cout<<"OURS PROGRAM ALLOCATED (PARALLEL)"<<endl;
+        // begin = chrono::steady_clock::now();
+        // populate_mram_parallel(system, subgraphs);
+        // end = chrono::steady_clock::now();
 
-        cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+        // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
 
-        begin = chrono::steady_clock::now();
-        system.exec();
-        end = chrono::steady_clock::now();
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            auto dpu = system.dpus()[i];
-            dpu->log(cout);
-        }
+        // begin = chrono::steady_clock::now();
+        // system.exec();
+        // end = chrono::steady_clock::now();
+        // for (uint32_t i = 0; i < NR_DPUS; i++) {
+        //     auto dpu = system.dpus()[i];
+        //     dpu->log(cout);
+        // }
 
-        cout<<"PR CHECK"<<endl;
-        system.copy(result, static_cast<unsigned>(subgraphs.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[0][0].output_start);
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            for (uint32_t j = 0; j < 5; j++) {
-                cout<<result[i][j]<<endl;
-            }
-            cout<<endl;
-        }
+        // cout<<"PR CHECK"<<endl;
+        // system.copy(result, static_cast<unsigned>(subgraphs.value[0].size() * 4), DPU_MRAM_HEAP_POINTER_NAME, subgraphs.dpu_param[0][0].output_start);
+        // for (uint32_t i = 0; i < NR_DPUS; i++) {
+        //     for (uint32_t j = 0; j < 5; j++) {
+        //         cout<<result[i][j]<<endl;
+        //     }
+        //     cout<<endl;
+        // }
 
-        cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+        // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
 
 
     } catch (const DpuError & e) {
