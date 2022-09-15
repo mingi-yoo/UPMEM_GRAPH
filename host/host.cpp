@@ -29,11 +29,11 @@ using namespace std;
 #endif
 
 void populate_mram(dpu_set_t& dpu, Graph& graph) {
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)graph.dpu_param[0], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, (uint8_t*)graph.row_ptr[0], graph.row_ptr[0].size() * sizeof(uint32_t)));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, (uint8_t*)graph.col_idx[0], graph.col_idx[0].size() * sizeof(uint32_t)));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].value_start, (uint8_t*)graph.value[0], graph.value[0].size() * sizeof(float)));
-    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].out_deg_start, (uint8_t*)graph.out_deg[0], graph.out_deg[0].size() * sizeof(uint32_t)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, 0, (uint8_t*)graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph))));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.row_ptr_start, (uint8_t*)graph.row_ptr, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v+1) * sizeof(uint32_t)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.col_idx_start, (uint8_t*)graph.col_idx, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_e) * sizeof(uint32_t)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.value_start, (uint8_t*)graph.value, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
+    DPU_ASSERT(dpu_copy_to(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.out_deg_start, (uint8_t*)graph.out_deg, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(uint32_t)));
 }
 
 void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {

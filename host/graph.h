@@ -33,10 +33,10 @@ static Graph read_csr(string csr_path) {
         uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_e);
         uint32_t feature_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v);
 
-        row_ptr = new uint32_t[row_ptr_size];
-        col_idx = new uint32_t[col_idx_size];
-        out_deg = new uint32_t[feature_size];
-        value = new float[feature_size];
+        graph.row_ptr = new uint32_t[row_ptr_size];
+        graph.col_idx = new uint32_t[col_idx_size];
+        graph.out_deg = new uint32_t[feature_size];
+        graph.value = new float[feature_size];
 
         for (uint32_t i = 0; i <= graph.dpu_param.num_v; i++) {
             csr >> graph.row_ptr[i];
@@ -70,7 +70,7 @@ static Graph read_csr(string csr_path) {
 void free_graph(Graph& graph) {
     delete [] graph.row_ptr;
     delete [] graph.col_idx;
-    delete [] graph_out_deg;
+    delete [] graph.out_deg;
     delete [] graph.value;
 }
 
