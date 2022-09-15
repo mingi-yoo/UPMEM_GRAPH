@@ -92,13 +92,14 @@ int main(int argc, char** argv) {
     end = chrono::steady_clock::now();
     cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
     DPU_FOREACH(dpu_set, dpu) {
-        DPU_ASSERT(dpu_log_read(dpu_set, stdout));
+        DPU_ASSERT(dpu_log_read(dpu, stdout));
+        DPU_ASSERT(dpu_copy_from(dpu, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.output_start, (uint8_t*)graph.output, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
     }
-    DPU_ASSERTI(dpu_copy_from(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param.output_start, (uint8_t*)graph.output, ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param.num_v) * sizeof(float)));
     cout<<"OUTPUT RECEIVED"<<endl;
     for (uint32_t i = 0; i < 10; i++)
         cout<<"DPU RESULT: "<<graph.output[i]<<endl;
 
+    DPU_ASSERT(dpu_free(dpu_set));
     free_graph(graph);
 
     // // TODO
