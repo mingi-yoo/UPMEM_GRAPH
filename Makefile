@@ -1,8 +1,8 @@
 DPU_DIR := dpu
 HOST_DIR := host
 BUILDDIR ?= bin
-NR_TASKLETS ?= 4
-NR_DPUS ?= 2
+NR_TASKLETS ?= 1
+NR_DPUS ?= 4
 
 HOST_TARGET := ${BUILDDIR}/host
 BASE_TARGET := ${BUILDDIR}/pr_baseline

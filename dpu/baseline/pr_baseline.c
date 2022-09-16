@@ -95,7 +95,7 @@ int main() {
         output[output_offset] = out_value;
         if (output_idx == 0 && output_offset < 10)
             printf("DPU RESULT: %f\n",out_value);
-        if (output_offset == output_cache_size - 1)
+        if (output_offset == output_cache_size - 1 || i == num_v_per_taskelt - 1)
             mram_write(output, (__mram_ptr void*)(output_m + output_idx*output_cache_size*sizeof(float)), output_cache_size*4);
     }
     printf("DPU PAGERANK COMPLETE\n");
