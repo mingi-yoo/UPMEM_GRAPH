@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
     DPU_ASSERT(dpu_free(dpu_set));
 
     // Ours
-    Graph subgraph = divide_graph(graph, NR_DPUS);
+    Graph subgraph = divide_graph_naive(graph, NR_DPUS);
 
     DPU_ASSERT(dpu_alloc(NR_DPUS, NULL, &dpu_set));
     DPU_ASSERT(dpu_load(dpu_set, DPU_OURS, NULL));

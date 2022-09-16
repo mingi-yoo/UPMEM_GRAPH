@@ -79,7 +79,7 @@ void free_graph(Graph& graph) {
     delete [] graph.output;
 }
 
-static Graph divide_graph(Graph& graph, uint32_t n) {
+static Graph divide_graph_naive(Graph& graph, uint32_t n) {
     Graph subgraph;
 
     subgraph.dpu_param = new DPUGraph[n];
@@ -169,6 +169,36 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     }
 
     return subgraph;
+}
+
+static Graph divide_graph_ours(Graph& graph, uint32_t n) {
+    Graph subgraph;
+
+    uint32_t* out_deg_origin = new uint32_t[graph.dpu_param[0].num_v_origin];
+    bool* f_table = new bool[graph.dpu_param[0].num_v_origin];
+
+    delete [] graph.out_deg;
+    delete [] graph.value;
+
+    uint32_t col_idx_size = subgraph.dpu_param[0].value_start - subgraph.dpu_param[0].col_idx_start;
+    uint32_t max_feature = 0;
+
+    for (uint32_t i = 0; i < n; i++) {
+        for (uint32_t j = 0; j < graph.dpu_param[i].num_e; j++) {
+            f_table[graph.col_idx[i*col_idx_size +j]] = true;
+        }
+        uint32_t count = 0;
+        for (uint32_t j = 0; j < graph.dpu_param[0].num_v_origin; j++) {
+            if (f_table[j]) {
+                count++;
+                f_table[j] = false;
+            }
+        }
+        if (max_feature < count)
+            max_feature = count;
+    }
+
+    // TO-DO
 }
 
 #endif
