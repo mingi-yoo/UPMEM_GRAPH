@@ -96,7 +96,7 @@ void populate_mram_parallel(dpu_set_t& dpu_set, Graph_X& graph) {
     DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_prepare_xfer(dpu, &graph.dpu_param[idx]));
     }
-    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, 0, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X))));
+    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, 0, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X)), DPU_XFER_DEFAULT));
 
     idx = 0;
     DPU_FOREACH(dpu_set, dpu, idx) {
@@ -110,13 +110,13 @@ void populate_mram_parallel(dpu_set_t& dpu_set, Graph_X& graph) {
     }
     DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].col_idx_start, col_idx_size * sizeof(uint32_t), DPU_XFER_DEFAULT));
 
-    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].feature_c_start, (uint8_t*)graph.feature_c, feature_c_size * sizeof(FEATURE), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_broadcast_to(dpu_set, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].feature_c_start, (uint8_t*)graph.feature_c, feature_c_size * sizeof(Feature), DPU_XFER_DEFAULT));
 
     idx = 0;
     DPU_FOREACH(dpu_set, dpu, idx) {
         DPU_ASSERT(dpu_prepare_xfer(dpu, &graph.feature_r[idx*feature_r_size]));
     }
-    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].feature_r_start, feature_r_size * sizeof(FEATURE), DPU_XFER_DEFAULT));
+    DPU_ASSERT(dpu_push_xfer(dpu_set, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0].feature_r_start, feature_r_size * sizeof(Feature), DPU_XFER_DEFAULT));
 }
 
 int main(int argc, char** argv) {
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
     Graph graph = read_csr(csr_path);
     // cout<<"GRAPH READ COMPLETE"<<endl;
 
-    // dpu_set_t dpu_set, dpu;
+    dpu_set_t dpu_set, dpu;
     // DPU_ASSERT(dpu_alloc(1, NULL, &dpu_set));
     // DPU_ASSERT(dpu_load(dpu_set, DPU_BASELINE, NULL));
 

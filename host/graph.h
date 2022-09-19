@@ -28,7 +28,7 @@ struct Graph_X {
     Feature* feature_c;
     Feature* feature_r;
     float* output;
-}
+};
 
 static Graph read_csr(string csr_path) {
     Graph graph;
@@ -203,6 +203,7 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
     // calculate unit size
     uint32_t row_ptr_size = (graph.dpu_param[0].col_idx_start - graph.dpu_param[0].row_ptr_start) / sizeof(uint32_t);
     uint32_t col_idx_size = (graph.dpu_param[0].value_start - graph.dpu_param[0].col_idx_start) / sizeof(uint32_t);
+    uint32_t output_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_v);
 
     for (uint32_t i = 0; i < n; i++) {
         for (uint32_t j = i*col_idx_size; j < i*col_idx_size + graph.dpu_param[i].num_e; j++)
@@ -252,7 +253,7 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
     // copy data
     for (uint32_t i = 0; i < common_col.size(); i++) {
         uint32_t v_id = common_col[i];
-        subgraph.feature_c[i].vid = vid;
+        subgraph.feature_c[i].v_id = v_id;
         subgraph.feature_c[i].out_deg = graph.out_deg[vid];
         subgraph.feature_c[i].value = graph.value[vid];
     }
@@ -270,7 +271,7 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
 
         for (uint32_t j = 0; j < respected_col[i].size(); j++) {
             uint32_t v_id = respected_col[i][j];
-            uint32_t idx = i*feature_r_size+j
+            uint32_t idx = i*feature_r_size+j;
             subgraph.feature_r[idx].v_id = v_id;
             subgraph.feature_r[idx].out_deg = graph.out_deg[v_id];
             subgraph.feature_r[idx].value = graph.value[v_id];
