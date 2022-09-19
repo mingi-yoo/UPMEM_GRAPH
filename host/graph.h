@@ -21,6 +21,21 @@ struct Graph {
     float* output;
 };
 
+struct Graph_X {
+    DPUGraph_X* dpu_param;
+
+    uint32_t hash_base;
+    uint32_t* hash_offset;
+
+    uint32_t* row_ptr;
+    uint32_t* col_idx;
+    uint32_t* out_deg_c;
+    uint32_t* out_deg_r;
+    float* value_c;
+    float* value_r;
+    float* output;
+}
+
 static Graph read_csr(string csr_path) {
     Graph graph;
     graph.dpu_param = new DPUGraph[1];
@@ -76,6 +91,18 @@ void free_graph(Graph& graph) {
     delete [] graph.col_idx;
     delete [] graph.out_deg;
     delete [] graph.value;
+    delete [] graph.output;
+}
+
+void free_graph(Graph_X& graph) {
+    delete [] graph.dpu_param;
+    delete [] hash_offset;
+    delete [] graph.row_ptr;
+    delete [] graph.col_idx;
+    delete [] graph.out_deg_c;
+    delete [] graph.out_deg_r;
+    delete [] graph.value_c;
+    delete [] graph.value_r;
     delete [] graph.output;
 }
 
@@ -171,34 +198,63 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n) {
     return subgraph;
 }
 
-static Graph divide_graph_ours(Graph& graph, uint32_t n) {
-    Graph subgraph;
+static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
+    Graph_X subgraph;
 
-    uint32_t* out_deg_origin = new uint32_t[graph.dpu_param[0].num_v_origin];
-    bool* f_table = new bool[graph.dpu_param[0].num_v_origin];
+    subgraph.dpu_param = new DPUGraph_X;
+    uint32_t num_v_origin = graph.dpu_param[0].num_v_origin;
 
-    delete [] graph.out_deg;
-    delete [] graph.value;
+    // make table for check
+    vector<vector<bool>> e_check;
+    for (uint32_t i = 0; i < n; i++)
+        e_check.push_back(vector<bool> (num_v_origin));
 
-    uint32_t col_idx_size = subgraph.dpu_param[0].value_start - subgraph.dpu_param[0].col_idx_start;
-    uint32_t max_feature = 0;
+    // calculate unit size
+    uint32_t row_ptr_size = (graph.dpu_param[0].col_idx_start - graph.dpu_param[0].row_ptr_start) / sizeof(uint32_t);
+    uint32_t col_idx_size = (graph.dpu_param[0].value_start - graph.dpu_param[0].col_idx_start) / sizeof(uint32_t);
+    uint32_t value_size = (graph.dpu_param[0].out_deg_start - graph.dpu_param[0].value_start) / sizeof(float);
+    uint32_t out_deg_size = (graph.dpu_param[0].output_start - graph.dpu_param[0].out_deg_start) / sizeof(uint32_t);
 
     for (uint32_t i = 0; i < n; i++) {
-        for (uint32_t j = 0; j < graph.dpu_param[i].num_e; j++) {
-            f_table[graph.col_idx[i*col_idx_size +j]] = true;
-        }
-        uint32_t count = 0;
-        for (uint32_t j = 0; j < graph.dpu_param[0].num_v_origin; j++) {
-            if (f_table[j]) {
-                count++;
-                f_table[j] = false;
-            }
-        }
-        if (max_feature < count)
-            max_feature = count;
+        for (uint32_t j = i*col_idx_size; j < i*col_idx_size + graph.dpu_param[i].num_e; j++)
+            e_check[i][graph.col_idx[j]] = true;
     }
 
-    // TO-DO
+    vector<uint32_t> common_col;
+    vector<vector<uint32_t>> respected_col;
+
+    for (uint32_t i = 0; i < n; i++)
+        respected_col.push_back(vector<uint32_t> ());
+
+    for (uint32_t i = 0; i < num_v_origin; i++) {
+        bool check = true;
+        for (uint32_t j = 0; j < n; j++) {
+            if (!e_check[j][i]) {
+                check = false;
+                break;
+            }
+        }
+        if (check)
+            common_col.push_back(i);
+        else {
+            for (uint32_t j = 0; j < n; j++) {
+                if (e_check[j][i])
+                    respected_col[j].push_back(i);
+            }
+        }
+    }
+
+    uint32_t feature_c_size = ROUND_UP_TO_MULTIPLE_OF_2(common_col.size() * sizeof(uint32_t));
+    uint32_t feature_r_size = 0;
+
+    for (uint32_t i = 0; i < n; i++) {
+        if (respected_col[i].size() > feature_r_size)
+            feature_r_size = respected_col[i].size();
+    }
+    feature_r_size = ROUND_UP_TO_MULTIPLE_OF_2(feature_r_size * sizeof(uint32_t));
+
+    // TO-DO: allocation features
+
 }
 
 #endif

@@ -15,4 +15,17 @@ struct DPUGraph {
     uint32_t output_start;
 };
 
+struct DPUGraph_X {
+	uint32_t num_v_origin;
+    uint32_t num_v;
+    uint32_t num_e;
+    uint32_t row_ptr_start;
+    uint32_t col_idx_start;
+    uint32_t value_c_start;
+    uint32_t value_r_start;
+    uint32_t out_deg_c_start
+    uint32_t out_deg_r_start;
+    uint32_t output_start;
+};
+
 #endif
