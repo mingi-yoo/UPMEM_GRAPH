@@ -20,9 +20,6 @@ struct DPUGraph_X {
     uint32_t num_v;
     uint32_t num_e;
     
-    uint32_t f_ptr_c_start;
-    uint32_t f_ptr_r_start;
-    
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
     uint32_t feature_c_start;

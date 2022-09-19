@@ -23,10 +23,6 @@ struct Graph {
 
 struct Graph_X {
     DPUGraph_X* dpu_param;
-
-    uint32_t* f_ptr_c; // unit is 64
-    uint32_t* f_ptr_r;
-
     uint32_t* row_ptr;
     uint32_t* col_idx;
     Feature* feature_c;
@@ -94,13 +90,10 @@ void free_graph(Graph& graph) {
 
 void free_graph(Graph_X& graph) {
     delete [] graph.dpu_param;
-    delete [] hash_offset;
     delete [] graph.row_ptr;
     delete [] graph.col_idx;
-    delete [] graph.out_deg_c;
-    delete [] graph.out_deg_r;
-    delete [] graph.value_c;
-    delete [] graph.value_r;
+    delete [] graph.feature_r;
+    delete [] graph.feature_c;
     delete [] graph.output;
 }
 
@@ -210,9 +203,6 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
     // calculate unit size
     uint32_t row_ptr_size = (graph.dpu_param[0].col_idx_start - graph.dpu_param[0].row_ptr_start) / sizeof(uint32_t);
     uint32_t col_idx_size = (graph.dpu_param[0].value_start - graph.dpu_param[0].col_idx_start) / sizeof(uint32_t);
-    uint32_t value_size = (graph.dpu_param[0].out_deg_start - graph.dpu_param[0].value_start) / sizeof(float);
-    uint32_t out_deg_size = (graph.dpu_param[0].output_start - graph.dpu_param[0].out_deg_start) / sizeof(uint32_t);
-    uint32_t output_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_v);
 
     for (uint32_t i = 0; i < n; i++) {
         for (uint32_t j = i*col_idx_size; j < i*col_idx_size + graph.dpu_param[i].num_e; j++)
@@ -286,43 +276,9 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
             subgraph.feature_r[idx].value = graph.value[v_id];
         }
     }
-
-    // initialize f_idx
-    uint32_t num_f_block = num_v_origin / 64;
-
-    uint32_t f_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(num_f_block+2);
-
-    graph.f_ptr_c = new uint32_t[f_ptr_size];
-    graph.f_ptr_r = new uint32_t[f_ptr_size * n];
-
-    // common
-    graph.f_ptr_c[0] = 0;
-    for (uint32_t i = 0; i < common_col.size(); i++) {
-        uint32_t idx = common_col[i] / 64 + 1;
-        graph.f_ptr_c[idx]++;
-    }
-
-    for (uint32_t i = 1; i < f_ptr_size; i++) {
-        graph.f_ptr_c[i] += graph.f_ptr_c[i-1];
-    }
-
-    // respected
-    for (uint32_t i = 0; i < n; i++) {
-        graph.f_ptr_r[0] = 0;
-        for (uint32_t j = 0; j < respected_col[i].size(); j++) {
-            uint32_t idx = respected_col[i][j] / 64 + 1;
-            graph.f_ptr_r[i*f_ptr_size + idx]++;
-        }
-        for (uint32_t j = 1; j < f_ptr_size; j++) {
-            graph.f_ptr_r[i*f_ptr_size + j] += graph.f_ptr_r[i*f_ptr_size + j -1];
-        }
-    }
-
     // offset initialize
     for (uint32_t i = 0; i < n; i++) {
-        subgraph.dpu_param[i].f_ptr_c_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X));
-        subgraph.dpu_param[i].f_ptr_r_start = subgraph.dpu_param[i].f_ptr_c_start + static_cast<unsigned>(f_ptr_size * sizeof(uint32_t));
-        subgraph.dpu_param[i].row_ptr_start = subgraph.dpu_param[i].f_ptr_r_start + static_cast<unsigned>(f_ptr_size * sizeof(uint32_t));
+        subgraph.dpu_param[i].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X));
         subgraph.dpu_param[i].col_idx_start = subgraph.dpu_param[i].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i].feature_c_start = subgraph.dpu_param[i].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
         subgraph.dpu_param[i].feature_r_start = subgraph.dpu_param[i].feature_c_start + static_cast<unsigned>(feature_c_size * sizeof(Feature));
