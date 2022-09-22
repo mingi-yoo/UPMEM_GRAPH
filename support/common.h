@@ -8,6 +8,8 @@ struct DPUGraph {
     uint32_t num_v_origin;
     uint32_t num_v;
     uint32_t num_e;
+    uint32_t num_tiles;
+
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
     uint32_t value_start;
@@ -19,6 +21,7 @@ struct DPUGraph_X {
 	uint32_t num_v_origin;
     uint32_t num_v;
     uint32_t num_e;
+    uint32_t num_tiles;
     
     uint32_t row_ptr_start;
     uint32_t col_idx_start;

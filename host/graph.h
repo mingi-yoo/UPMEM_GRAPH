@@ -39,6 +39,7 @@ static Graph read_csr(string csr_path) {
     if (csr.is_open()) {
         csr >> graph.dpu_param[0].num_v >> graph.dpu_param[0].num_e;
         graph.dpu_param[0].num_v_origin = graph.dpu_param[0].num_v;
+        graph.dpu_param[0].num_tiles = 1;
 
         uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_v+1);
         uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_e);
@@ -97,11 +98,12 @@ void free_graph(Graph_X& graph) {
     delete [] graph.output;
 }
 
-static Graph divide_graph_naive(Graph& graph, uint32_t n) {
+static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
     Graph subgraph;
 
     subgraph.dpu_param = new DPUGraph[n];
 
+    // distribute vertices in a balanced manner
     uint32_t num_v_origin = graph.dpu_param[0].num_v_origin;
     uint32_t q = num_v_origin / n;
     uint32_t r = num_v_origin - q * n;
@@ -135,11 +137,12 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n) {
 
         subgraph.dpu_param[i].num_v_origin = num_v_origin;
         subgraph.dpu_param[i].num_e = num_e;
+        subgraph.dpu_param[i].num_tiles = t;
 
         row_start = row_end;
     }
 
-    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]+1);
+    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]*t+1);
     uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
     uint32_t feature_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
     uint32_t output_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]);
@@ -165,16 +168,18 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n) {
 
         uint32_t bias = graph.row_ptr[row_start];
         uint32_t idx = 1;
+        for (uint32_t j = 0; j < t; j++) {
+            // TODO: tiling
+            for (uint32_t j = row_start + 1; j <= row_end; j++) {
+                subgraph.row_ptr[i*row_ptr_size + idx] = graph.row_ptr[j] - bias;
+                idx++;
+            }
 
-        for (uint32_t j = row_start + 1; j <= row_end; j++) {
-            subgraph.row_ptr[i*row_ptr_size + idx] = graph.row_ptr[j] - bias;
-            idx++;
-        }
-
-        idx =    0;
-        for (uint32_t j = graph.row_ptr[row_start]; j < graph.row_ptr[row_end]; j++) {
-            subgraph.col_idx[i*col_idx_size + idx] = graph.col_idx[j];
-            idx++;
+            idx =    0;
+            for (uint32_t j = graph.row_ptr[row_start]; j < graph.row_ptr[row_end]; j++) {
+                subgraph.col_idx[i*col_idx_size + idx] = graph.col_idx[j];
+                idx++;
+            }
         }
         
         subgraph.dpu_param[i].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
