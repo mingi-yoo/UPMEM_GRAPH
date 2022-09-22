@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
                 output_path = optarg;
                 break;
             case 't':
-                uint32_t = stoi(optarg);
+                num_t = stoi(optarg);
                 break;
             case '?':
                 cout <<"WRONG OPTIONS"<<endl;

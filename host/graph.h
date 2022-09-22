@@ -193,7 +193,7 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
                 uint32_t col = graph.col_idx[k]; 
                 for (uint32_t l = 0; l < t; l++) {
                     if (col >= unit_t[l]) {
-                        egde_acm[l]++;
+                        edge_acm[l]++;
                         edges[l].push_back(col);
                         break;
                     }
@@ -210,7 +210,7 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
         uint32_t v_acm = 0;
         for (uint32_t j = 0; j < t; j++) {
             for (uint32_t k = 0; k < vertices[j].size(); k++) {
-                v_acm += vertices[j][k]
+                v_acm += vertices[j][k];
                 subgraph.row_ptr[i*row_ptr_size + idx] = v_acm;
                 idx++;
             }
@@ -308,8 +308,8 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
     for (uint32_t i = 0; i < common_col.size(); i++) {
         uint32_t v_id = common_col[i];
         subgraph.feature_c[i].v_id = v_id;
-        subgraph.feature_c[i].out_deg = graph.out_deg[vid];
-        subgraph.feature_c[i].value = graph.value[vid];
+        subgraph.feature_c[i].out_deg = graph.out_deg[v_id];
+        subgraph.feature_c[i].value = graph.value[v_id];
     }
 
     for (uint32_t i = 0; i < n; i++) {
