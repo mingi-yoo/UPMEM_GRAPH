@@ -39,7 +39,7 @@ static Graph read_csr(string csr_path) {
     if (csr.is_open()) {
         csr >> graph.dpu_param[0].num_v >> graph.dpu_param[0].num_e;
         graph.dpu_param[0].num_v_origin = graph.dpu_param[0].num_v;
-        graph.dpu_param[0].num_tiles = 1;
+        graph.dpu_param[0].num_t = 1;
 
         uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_v+1);
         uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(graph.dpu_param[0].num_e);
@@ -149,7 +149,7 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
 
         subgraph.dpu_param[i].num_v_origin = num_v_origin;
         subgraph.dpu_param[i].num_e = num_e;
-        subgraph.dpu_param[i].num_tiles = t;
+        subgraph.dpu_param[i].num_t = t;
 
         row_start = row_end;
     }
