@@ -123,17 +123,21 @@ int main(int argc, char** argv) {
     // read graph file
     string csr_path;
     string output_path;
+    uint32_t num_t = 1;
 
     chrono::steady_clock::time_point begin, end;
 
     int opt = 0;
-    while((opt = getopt(argc, argv, "i:o:")) != EOF) {
+    while((opt = getopt(argc, argv, "i:o:t:")) != EOF) {
         switch (opt) {
             case 'i':
                 csr_path = optarg;
                 break;
             case 'o':
                 output_path = optarg;
+                break;
+            case 't':
+                uint32_t = stoi(optarg);
                 break;
             case '?':
                 cout <<"WRONG OPTIONS"<<endl;
@@ -169,7 +173,7 @@ int main(int argc, char** argv) {
     DPU_ASSERT(dpu_free(dpu_set));
 
     // Ours
-    Graph subgraph = divide_graph_naive(graph, NR_DPUS);
+    Graph subgraph = divide_graph_naive(graph, NR_DPUS, num_t);
 
     DPU_ASSERT(dpu_alloc(NR_DPUS, NULL, &dpu_set));
     DPU_ASSERT(dpu_load(dpu_set, DPU_OURS, NULL));
