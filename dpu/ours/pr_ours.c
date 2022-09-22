@@ -37,7 +37,7 @@ int main() {
     uint32_t output_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->output_start;
     
     seqreader_t row_ptr_reader;
-    uint32_t* row_ptr = seqread_init(seqread_alloc(), (__mram_ptr void*)(row_ptr_m + row_start*sizeof(uint32_t)), &row_ptr_reader);
+    uint32_t* row_ptr = seqread_init(seqread_alloc(), (__mram_ptr void*)row_ptr_m, &row_ptr_reader);
 
     uint32_t col_start = *row_ptr;
     seqreader_t col_idx_reader;
