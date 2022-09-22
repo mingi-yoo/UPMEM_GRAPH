@@ -108,13 +108,25 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
     uint32_t q = num_v_origin / n;
     uint32_t r = num_v_origin - q * n;
 
+    uint32_t q_t = num_v_origin / t;
+    uint32_t q_r = num_v_origin - q_t * t;
+
     uint32_t *unit_v = new uint32_t[n];
+    uint32_t *unit_t = new uint32_t[t];
 
     for (uint32_t i = 0; i < n; i++) {
         unit_v[i] = q;
     }
     for (uint32_t i = 0; i < r; i++) {
         unit_v[i]++;
+    }
+
+    // this is temporal (only used in this function)
+    for (uint32_t i = 0; i < t; i++) {
+        unit_t[i] = q_t;
+    }
+    for (uint32_t i = 0; i < q_r; i++) {
+        unit_t[i]++;
     }
 
     cout<<"partitioned vertex check"<<endl;
@@ -160,28 +172,58 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
 
     row_start = 0;
     row_end = 0;
+
+    vector<vector<uint32_t>> vertices;
+    vector<vector<uint32_t>> edges;
+    vector<uint32_t> edge_acm(t);
+
+    for (uint32_t i = 0; i < t; i++) {
+        vertices.push_back(vector<uint32_t> ());
+        edges.push_back(vector<uint32_t> ());
+    }
+
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param[i].num_v = unit_v[i];
         row_end += unit_v[i];
 
         subgraph.row_ptr[i*row_ptr_size] = 0;
 
-        uint32_t bias = graph.row_ptr[row_start];
-        uint32_t idx = 1;
-        for (uint32_t j = 0; j < t; j++) {
-            // TODO: tiling
-            for (uint32_t j = row_start + 1; j <= row_end; j++) {
-                subgraph.row_ptr[i*row_ptr_size + idx] = graph.row_ptr[j] - bias;
-                idx++;
+        for (uint32_t j = row_start; j < row_end; j++) {
+            for (uint32_t k = graph.row_ptr[j]; k < graph.row_ptr[j+1]; k++) {
+                uint32_t col = graph.col_idx[k]; 
+                for (uint32_t l = 0; l < t; l++) {
+                    if (col >= unit_t[l]) {
+                        egde_acm[l]++;
+                        edges[l].push_back(col);
+                        break;
+                    }
+                }
             }
+            for (uint32_t k = 0; k < t; k++) {
+                vertices[k].push_back(edge_acm[k]);
+                edge_acm[k] = 0;
+            }
+        }
 
-            idx =    0;
-            for (uint32_t j = graph.row_ptr[row_start]; j < graph.row_ptr[row_end]; j++) {
-                subgraph.col_idx[i*col_idx_size + idx] = graph.col_idx[j];
+        subgraph.row_ptr[i*row_ptr_size] = 0;
+        uint32_t idx = 1;
+        uint32_t v_acm = 0;
+        for (uint32_t j = 0; j < t; j++) {
+            for (uint32_t k = 0; k < vertices[j].size(); k++) {
+                v_acm += vertices[j][k]
+                subgraph.row_ptr[i*row_ptr_size + idx] = v_acm;
                 idx++;
             }
         }
-        
+
+        idx = 0;
+        for (uint32_t j = 0; j < t; j++) {
+            for (uint32_t k = 0; k < edges[j].size(); k++) {
+                subgraph.col_idx[i*col_idx_size + idx] = edges[j][k];
+                idx++;
+            }
+        }
+
         subgraph.dpu_param[i].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
         subgraph.dpu_param[i].col_idx_start = subgraph.dpu_param[i].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i].value_start = subgraph.dpu_param[i].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
@@ -189,7 +231,14 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
         subgraph.dpu_param[i].output_start = subgraph.dpu_param[i].out_deg_start + static_cast<unsigned>(feature_size * sizeof(float));
          
         row_start = row_end;
+
+        for (uint32_t j = 0; j < t; j++) {
+            vertices[j].clear();
+            edges[j].clear();
+        }
     }
+
+    delete [] unit_t;
 
     return subgraph;
 }
