@@ -97,7 +97,7 @@ int main() {
             else
                 output[output_offset] += out_value;
 
-            if (i == num_t - 1 && output_offset < 10)
+            if (i == num_t - 1 && output_idx == 0 && output_offset < 10)
                 printf("DPU RESULT: %f\n",out_value);
 
             if (output_offset == output_cache_size - 1)

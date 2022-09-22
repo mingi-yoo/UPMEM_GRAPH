@@ -89,7 +89,7 @@ int main() {
             out_value = base_score + kdamp * incoming_total;
             uint32_t output_idx = j / output_cache_size;
             uint32_t output_offset = j % output_cache_size;
-            if (output_idx == 0 && i > 1)
+            if (output_idx == 0 && i >= 1)
                 mram_read((__mram_ptr void const*)(output_m + output_idx*output_cache_size*sizeof(float)), output, output_cache_size*4);
 
             if (i == 0)
@@ -97,7 +97,7 @@ int main() {
             else
                 output[output_offset] += out_value;
 
-            if (i == num_t - 1 && output_offset < 10)
+            if (i == num_t - 1 && output_idx == 0 && output_offset < 10)
                 printf("DPU RESULT: %f\n",out_value);
 
             if (output_offset == output_cache_size - 1)

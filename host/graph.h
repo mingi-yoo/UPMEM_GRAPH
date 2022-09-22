@@ -128,10 +128,18 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
     for (uint32_t i = 0; i < q_r; i++) {
         unit_t[i]++;
     }
+    for (uint32_t i = 1; i < t; i++) {
+        unit_t[i] += unit_t[i-1];
+    }
 
     cout<<"partitioned vertex check"<<endl;
     for (uint32_t i = 0; i < n; i++) {
         cout<<unit_v[i]<<" ";
+    }
+    cout<<endl;
+    cout<<"partitioned tile check"<<endl;
+    for (uint32_t i = 0; i < t; i++) {
+        cout<<unit_t[i]<<" ";
     }
     cout<<endl;
 
@@ -192,7 +200,7 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
             for (uint32_t k = graph.row_ptr[j]; k < graph.row_ptr[j+1]; k++) {
                 uint32_t col = graph.col_idx[k]; 
                 for (uint32_t l = 0; l < t; l++) {
-                    if (col >= unit_t[l]) {
+                    if (col < unit_t[l]) {
                         edge_acm[l]++;
                         edges[l].push_back(col);
                         break;
