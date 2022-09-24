@@ -14,6 +14,7 @@ using namespace std;
 
 struct Graph {
     DPUGraph* dpu_param;
+    
     uint32_t* row_ptr;
     uint32_t* col_idx;
     uint32_t* out_deg;
@@ -23,6 +24,8 @@ struct Graph {
 
 struct Graph_X {
     DPUGraph_X* dpu_param;
+    HashInfo* hash_info;
+
     uint32_t* row_ptr;
     uint32_t* col_idx;
     Feature* feature_c;
@@ -251,10 +254,14 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
     return subgraph;
 }
 
-static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
+static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
     Graph_X subgraph;
 
-    subgraph.dpu_param = new DPUGraph_X;
+    subgraph.dpu_param = new DPUGraph_X[n];
+    subgraph.hash_info = new HashInfo[n];
+
+    // TO-DO: hash
+
     uint32_t num_v_origin = graph.dpu_param[0].num_v_origin;
 
     // make table for check
@@ -325,7 +332,7 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i].num_v = graph.dpu_param[i].num_v;
         subgraph.dpu_param[i].num_e = graph.dpu_param[i].num_e;
 
-        for (uint32_t j = 0; j <= graph.dpu_param[i].num_v; j++)
+        for (uint32_t j = 0; j <= graph.dpu_param[i].num_v * graph.dpu_param[i].num_t; j++)
             subgraph.row_ptr[i*row_ptr_size+j] = graph.row_ptr[i*row_ptr_size+j];
 
         for (uint32_t j = 0; j < graph.dpu_param[i].num_e; j++)
