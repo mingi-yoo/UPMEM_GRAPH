@@ -124,11 +124,12 @@ int main(int argc, char** argv) {
     string csr_path;
     string output_path;
     uint32_t num_t = 1;
+    uint32_t hash_key = 64;
 
     chrono::steady_clock::time_point begin, end;
 
     int opt = 0;
-    while((opt = getopt(argc, argv, "i:o:t:")) != EOF) {
+    while((opt = getopt(argc, argv, "i:o:t:h:")) != EOF) {
         switch (opt) {
             case 'i':
                 csr_path = optarg;
@@ -138,6 +139,9 @@ int main(int argc, char** argv) {
                 break;
             case 't':
                 num_t = stoi(optarg);
+                break;
+            case 'h':
+                hash_key = stoi(optarg);
                 break;
             case '?':
                 cout <<"WRONG OPTIONS"<<endl;

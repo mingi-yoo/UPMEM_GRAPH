@@ -260,8 +260,6 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
     subgraph.dpu_param = new DPUGraph_X[n];
     subgraph.hash_info = new HashInfo[n];
 
-    // TO-DO: hash
-
     uint32_t num_v_origin = graph.dpu_param[0].num_v_origin;
 
     // make table for check
@@ -279,11 +277,18 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
             e_check[i][graph.col_idx[j]] = true;
     }
 
-    vector<uint32_t> common_col;
-    vector<vector<uint32_t>> respected_col;
+    // iniialize for hash
+    vector<vector<uint32_t>> common_col;
+    vector<vector<vector<uint32_t>>> respected_col;
 
-    for (uint32_t i = 0; i < n; i++)
-        respected_col.push_back(vector<uint32_t> ());
+    for (uint32_t i = 0; i < hash_key; i++) 
+        common_col.push_back(vector<uint32_t> ());
+
+    for (uint32_t i = 0; i < n; i++) {
+        respected_col.push_back(vector<vector<<uint32_t>> ());
+        for (uint32_t j = 0; j < hash_key; j++)
+            respected_col.push_back(vector<uint32_t> ());
+    }
 
     for (uint32_t i = 0; i < num_v_origin; i++) {
         bool check = true;
@@ -293,22 +298,33 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
                 break;
             }
         }
-        if (check)
-            common_col.push_back(i);
+        uint32_t hash_idx = i % hash_key;
+
+        if (check) {
+            common_col[hash_idx].push_back(i);
+        }
         else {
             for (uint32_t j = 0; j < n; j++) {
                 if (e_check[j][i])
-                    respected_col[j].push_back(i);
+                    respected_col[hash_idx][j].push_back(i);
             }
         }
     }
 
-    uint32_t feature_c_size = ROUND_UP_TO_MULTIPLE_OF_2(common_col.size());
+    uint32_t feature_c_size = 0;
     uint32_t feature_r_size = 0;
 
+    for (uint32_t i = 0; i < hash_key; i++)
+        feature_c_size += common_col[i].size();
+    feature_c_size = ROUND_UP_TO_MULTIPLE_OF_2(feature_c_size);
+
     for (uint32_t i = 0; i < n; i++) {
-        if (respected_col[i].size() > feature_r_size)
-            feature_r_size = respected_col[i].size();
+        uint32_t comp = 0;
+        for (uint32_t j = 0; j < hash_key; j++) {
+            comp += respected_col[i][j].size();
+        }
+        if (comp > feature_r_size)
+            feature_r_size = comp;
     }
     feature_r_size = ROUND_UP_TO_MULTIPLE_OF_2(feature_r_size);
 
@@ -318,37 +334,59 @@ static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
     subgraph.feature_c = new Feature[feature_c_size];
     subgraph.feature_r = new Feature[feature_r_size * n];
     subgraph.output = new float[output_size * n];
+    for (uint32_t i = 0; i < n; i++) {
+        subgraph.hash_info[i].hash_key = hash_key;
+        subgraph.hash_info[i].fc_start = new uint32_t[hash_key + 1];
+        subgraph.hash_info[i].fr_start = new uint32_t[hash_key + 1];
+    }
+
+    uint32_t hash_info_size = ROUND_UP_TO_MULTIPLE_OF_2(hash_key * 2 + 3);
 
     // copy data
-    for (uint32_t i = 0; i < common_col.size(); i++) {
-        uint32_t v_id = common_col[i];
-        subgraph.feature_c[i].v_id = v_id;
-        subgraph.feature_c[i].out_deg = graph.out_deg[v_id];
-        subgraph.feature_c[i].value = graph.value[v_id];
+    uint32_t edge_acm = 0;
+    for (uint32_t i = 0; i < hash_key; i++) {
+        for (uint32_t j = 0; j < n; j++)
+            subgraph.hash_info[j].fc_start[i] = edge_acm * sizeof(uint32_t);
+        for (uint32_t j = 0; j < common_col[i].size(); j++) {
+            uint32_t v_id = common_col[i][j];
+            subgraph.feature_c[j].v_id = v_id;
+            subgraph.feature_c[j].out_deg = graph.out_deg[v_id];
+            subgraph.feature_c[j].value = graph.value[v_id];
+            edge_acm++;
+        }
     }
+    // for bound about last hash data
+    for (uint32_t i = 0; i < n; i++)
+        subgraph.hash_info[i].fc_start[hash_key] = edge_acm;
 
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param[i].num_v_origin = num_v_origin;
         subgraph.dpu_param[i].num_v = graph.dpu_param[i].num_v;
         subgraph.dpu_param[i].num_e = graph.dpu_param[i].num_e;
-
+        edge_acm = 0;
+        
         for (uint32_t j = 0; j <= graph.dpu_param[i].num_v * graph.dpu_param[i].num_t; j++)
             subgraph.row_ptr[i*row_ptr_size+j] = graph.row_ptr[i*row_ptr_size+j];
 
         for (uint32_t j = 0; j < graph.dpu_param[i].num_e; j++)
             subgraph.col_idx[i*col_idx_size+j] = graph.col_idx[i*col_idx_size+j];
 
-        for (uint32_t j = 0; j < respected_col[i].size(); j++) {
-            uint32_t v_id = respected_col[i][j];
-            uint32_t idx = i*feature_r_size+j;
-            subgraph.feature_r[idx].v_id = v_id;
-            subgraph.feature_r[idx].out_deg = graph.out_deg[v_id];
-            subgraph.feature_r[idx].value = graph.value[v_id];
+        for (uint32_t j = 0; j < hash_key; j++) {
+            subgraph.hash_info[i].fr_start[j] = edge_acm * sizeof(uint32_t);
+            for (uint32_t k = 0; k < respected_col[i][j].size(); j++) {
+                uint32_t v_id = respected_col[i][j][k];
+                uint32_t idx = i*feature_r_size+edge_acm;
+                subgraph.feature_r[idx].v_id = v_id;
+                subgraph.feature_r[idx].out_deg = graph.out_deg[v_id];
+                subgraph.feature_r[idx].value = graph.value[v_id];
+            }
         }
+        subgraph.hash_info[i].fr_start[hash_key] = edge_acm * sizeof(uint32_t);
     }
     // offset initialize
     for (uint32_t i = 0; i < n; i++) {
-        subgraph.dpu_param[i].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X));
+        subgraph.dpu_param[i].hash_info_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph_X));
+        subgraph.dpu_param[i].row_ptr_start = subgraph.dpu_param[i].hash_info_start + static_cast<unsigned>(hash_info_size * sizeof(uint32_t));
         subgraph.dpu_param[i].col_idx_start = subgraph.dpu_param[i].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i].feature_c_start = subgraph.dpu_param[i].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
         subgraph.dpu_param[i].feature_r_start = subgraph.dpu_param[i].feature_c_start + static_cast<unsigned>(feature_c_size * sizeof(Feature));

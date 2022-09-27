@@ -23,11 +23,18 @@ struct DPUGraph_X {
     uint32_t num_e;
     uint32_t num_t;
     
+    uint32_t hash_info_start;
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
     uint32_t feature_c_start;
     uint32_t feature_r_start;
     uint32_t output_start;
+};
+
+struct HashInfo {
+    uint32_t hash_key;
+    uint32_t* fc_start;
+    uint32_t* fr_start;
 };
 
 struct Feature {
