@@ -14,16 +14,6 @@ using namespace std;
 
 struct Graph {
     DPUGraph* dpu_param;
-    
-    uint32_t* row_ptr;
-    uint32_t* col_idx;
-    uint32_t* out_deg;
-    float* value;
-    float* output;
-};
-
-struct Graph_X {
-    DPUGraph_X* dpu_param;
     HashInfo* hash_info;
 
     uint32_t* row_ptr;
@@ -81,15 +71,6 @@ static Graph read_csr(string csr_path) {
         throw invalid_argument("Cannot open graph");
 
     return graph;
-}
-
-void free_graph(Graph& graph) {
-    delete [] graph.dpu_param;
-    delete [] graph.row_ptr;
-    delete [] graph.col_idx;
-    delete [] graph.out_deg;
-    delete [] graph.value;
-    delete [] graph.output;
 }
 
 void free_graph(Graph_X& graph) {
@@ -254,8 +235,8 @@ static Graph divide_graph_naive(Graph& graph, uint32_t n, uint32_t t) {
     return subgraph;
 }
 
-static Graph_X divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
-    Graph_X subgraph;
+static Graph divide_graph_ours(Graph& graph, uint32_t n, uint32_t hash_key) {
+    Graph subgraph;
 
     subgraph.dpu_param = new DPUGraph_X[n];
     subgraph.hash_info = new HashInfo[n];

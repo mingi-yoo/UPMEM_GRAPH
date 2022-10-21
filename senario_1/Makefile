@@ -36,4 +36,4 @@ clean:
 	$(RM) -r $(BUILDDIR)
 
 test: all
-	./${HOST_TARGET} -i dataset/cora.txt -o ./
+	./${HOST_TARGET} -i ../dataset/cora.txt -o ./
