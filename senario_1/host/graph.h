@@ -81,7 +81,7 @@ void free_graph(Graph& graph) {
     delete [] graph.output;
 }
 
-static Graph divide_graphe(Graph& graph, uint32_t n, uint32_t t) {
+static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
     Graph subgraph;
 
     subgraph.dpu_param = new DPUGraph[n];
