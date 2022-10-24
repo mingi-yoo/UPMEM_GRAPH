@@ -126,7 +126,7 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
         uint32_t num_e;
 
         row_end += unit_v[i];
-        num_e = graph.row_ptr[row_end] - graph.row_ptr[row_start];
+        num_e = graph.row_ptr[0][row_end] - graph.row_ptr[0][row_start];
 
         if (col_idx_max < num_e)
             col_idx_max = num_e;
@@ -162,7 +162,7 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
     }
 
     for (uint32_t i = 0; i < n; i++) {
-        subgraph.dpu_param[i].num_v = unit_v[i];
+        subgraph.dpu_param[i][0].num_v = unit_v[i];
         row_end += unit_v[i];
 
         subgraph.row_ptr[i][0] = 0;
@@ -207,7 +207,7 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
         subgraph.dpu_param[i][0].value_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
         subgraph.dpu_param[i][0].out_deg_start = subgraph.dpu_param[i][0].value_start + static_cast<unsigned>(feature_size * sizeof(uint32_t));
         subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].out_deg_start + static_cast<unsigned>(feature_size * sizeof(float));
-        
+
 
         for (uint32_t j = 0; j < t; j++) {
             vertices[j].clear();

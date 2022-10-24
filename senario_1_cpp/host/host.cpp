@@ -1,6 +1,4 @@
 #include <dpu>
-#include <dpu_log.h>
-
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -28,7 +26,7 @@ using namespace std;
 #define DPU_OURS "./bin/pr_ours"
 #endif
 
-void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
+void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param[id], ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id][0].row_ptr_start, graph.row_ptr[id]);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id][0].col_idx_start, graph.col_idx[id]);
@@ -36,7 +34,7 @@ void populate_mram(dpu_set_t& dpu, Graph& graph, uint32_t id) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[id][0].out_deg_start, graph.out_deg);
 }
 
-void populate_mram_parallel(dpu_set_t& dpu, Graph& graph) {
+void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx);
@@ -94,7 +92,7 @@ int main(int argc, char** argv) {
 
         vector<vector<float>> result(NR_DPUS);
         for (uint32_t i = 0; i < NR_DPUS; i++)
-            result[i].resize(static_cast<unsinged>(graph.value.size()));
+            result[i].resize(static_cast<unsigned>(graph.value.size()));
 
         dpu_baseline->copy(result, static_cast<unsigned>(graph.value.size() * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
         cout<<"OUTPUT RECEIVED"<<endl;
