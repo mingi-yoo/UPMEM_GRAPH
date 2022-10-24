@@ -10,12 +10,21 @@ struct DPUGraph {
     uint32_t num_v;
     uint32_t num_e;
     uint32_t num_t;
+    uint32_t hash_key;
 
+    uint32_t hash_fc_start;
+    uint32_t hash_fr_start;
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
-    uint32_t value_start;
-    uint32_t out_deg_start;
+    uint32_t fc_start;
+    uint32_t fr_start;
     uint32_t output_start;
 };
+
+struct Feature {
+    uint32_t v_id;
+    uint32_t out_deg;
+    float value;
+}
 
 #endif
