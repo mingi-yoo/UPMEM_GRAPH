@@ -53,7 +53,7 @@ static Graph read_csr(string csr_path) {
         }
 
         for (uint32_t i = 0; i < graph.dpu_param[0][0].num_v; i++) {
-            graph.fc[i].vid = i;
+            graph.fc[i].v_id = i;
             csr >> graph.fc[i].out_deg;
             graph.fc[i].value = 1.0f / graph.dpu_param[0][0].num_v;
         };
@@ -246,7 +246,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
         col_c.push_back(vector<uint32_t> ());
 
     for (uint32_t i = 0; i < n; i++) {
-        col_r.push_back(vector<vector<uint32_t>> ())
+        col_r.push_back(vector<vector<uint32_t>> ());
         for (uint32_t j = 0; j < hash_key; j++)
             col_r[i].push_back(vector<uint32_t> ());
     }
@@ -289,7 +289,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     }
     fr_size = ROUND_UP_TO_MULTIPLE_OF_2(fr_size);
 
-    hash_size = ROUND_UP_TO_MULTIPLE_OF_2(hash_key+1);
+    uint32_t hash_size = ROUND_UP_TO_MULTIPLE_OF_2(hash_key+1);
     subgraph.hash_fc.resize(hash_size);
     for (uint32_t i = 0; i < n; i++)
         subgraph.hash_fr.push_back(vector<uint32_t> (hash_size));
@@ -331,12 +331,12 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
 
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param[i][0].hash_fc_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
-        subgraph.dpu_param[i][0].hash_fr_start = subgraph.dpu_param[i][0].hash_fc_size + static_cast<unsigned>(hash_size * sizeof(uint32_t));
-        subgraph.dpu_param[i][0].row_ptr_start = subgraph.dpu_param[i][0].hash_fr_size + static_cast<unsigned>(hash_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].hash_fr_start = subgraph.dpu_param[i][0].hash_fc_start + static_cast<unsigned>(hash_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].row_ptr_start = subgraph.dpu_param[i][0].hash_fr_start + static_cast<unsigned>(hash_size * sizeof(uint32_t));
         subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
-        graph.dpu_param[i][0].fc_start = graph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
-        graph.dpu_param[i][0].fr_start = graph.dpu_param[i][0].fc_start + static_cast<unsigned>(fc_size * sizeof(Feature));
-        graph.dpu_param[i][0].output_start = graph.dpu_param[i][0].fr_start + static_cast<unsigned>(fr_size * sizeof(Feature));
+        subgraph.dpu_param[i][0].fc_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].fr_start = subgraph.dpu_param[i][0].fc_start + static_cast<unsigned>(fc_size * sizeof(Feature));
+        subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].fr_start + static_cast<unsigned>(fr_size * sizeof(Feature));
     }
 }
 

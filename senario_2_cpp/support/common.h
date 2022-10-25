@@ -25,6 +25,6 @@ struct Feature {
     uint32_t v_id;
     uint32_t out_deg;
     float value;
-}
+};
 
 #endif
