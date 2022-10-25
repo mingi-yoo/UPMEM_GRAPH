@@ -240,7 +240,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
 
 
     vector<vector<uint32_t>> col_c;
-    vector<vector<uint32_t>> col_r;
+    vector<vector<vector<uint32_t>>> col_r;
 
     for (uint32_t i = 0; i < hash_key; i++)
         col_c.push_back(vector<uint32_t> ());
@@ -304,7 +304,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
         for (uint32_t j = 0; j < col_c[i].size(); j++) {
             subgraph.fc[edge_acm].v_id = col_c[i][j];
             subgraph.fc[edge_acm].out_deg = subgraph.fc[col_c[i][j]].out_deg;
-            subgraph.fc[edge_acm].value = subgraph.fc[col[i][j]].value;
+            subgraph.fc[edge_acm].value = subgraph.fc[col_c[i][j]].value;
             edge_acm++;
         }
     }

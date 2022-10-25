@@ -45,8 +45,8 @@ int main() {
     uint32_t cache_size = 64;
     uint32_t output_cache_size = 64;
 
-    struct Feature* fc = mem_alloc(cache_size*sizeof(Feature));
-    mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(Feature));
+    struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
+    mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));
 
     float* output = mem_alloc(output_cache_size*sizeof(float));
 
@@ -73,10 +73,10 @@ int main() {
                 uint32_t cache_idx = col/cache_size;
                 uint32_t cache_offset = col%cache_size;
                 if (cur_cache_idx != cache_idx) {
-                    mram_read((__mram_ptr void const*)(value_m+cache_idx*cache_size*sizeof(Feature)), value, cache_size*sizeof(Feature));
+                    mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(struct Feature)), fc, cache_size*sizeof(struct Feature));
                     cur_cache_idx = cache_idx;
                 }
-                incoming_total += value[cache_offset] / out_deg[cache_offset];
+                incoming_total += fc[cache_offset].value / fc[cache_offset].out_deg;
                 col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
             }
             row_prev = *row_ptr;
