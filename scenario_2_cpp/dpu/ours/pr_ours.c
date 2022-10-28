@@ -58,7 +58,7 @@ int main() {
     mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));    
 
     struct Feature* fr = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
-    mram_read((__mram_ptr void const*)fr_m, fr, cache_size*sizeof(Feature));
+    mram_read((__mram_ptr void const*)fr_m, fr, cache_size*sizeof(struct Feature));
 
     float* output = mem_alloc(output_cache_size*sizeof(float));
 
@@ -104,7 +104,7 @@ int main() {
                     cache_idx = hash_fc[hash_offset] / cache_size;
                     cache_offset = hash_fc[hash_offset] % cache_size;
                     if (cur_fc_idx != cache_idx) {
-                        mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(Feature)), fc, (cache_size)*sizeof(Feature));
+                        mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(struct Feature)), fc, (cache_size)*sizeof(struct Feature));
                         cur_fc_idx = cache_idx;
                     }
 
@@ -116,7 +116,7 @@ int main() {
                         }
                         cur_check++;
                         if (cache_offset + cur_check > cache_size) {
-                            mram_read((__mram_ptr void const*)(fc_m+(cache_idx+1)*cache_size*sizeof(Feature)), fc, (cache_size)*sizeof(Feature));
+                            mram_read((__mram_ptr void const*)(fc_m+(cache_idx+1)*cache_size*sizeof(struct Feature)), fc, (cache_size)*sizeof(struct Feature));
                             cur_fc_idx = cache_idx + 1;
                             cache_offset = -cur_check;
                         }
@@ -135,7 +135,7 @@ int main() {
                         cache_idx = hash_fr[hash_offset] / cache_size;
                         cache_offset = hash_fr[hash_offset] % cache_size;
                         if (cur_fr_idx != cache_idx) {
-                            mram_read((__mram_ptr void const*)(fr_m+cache_idx*cache_size*sizeof(Feature)), fr, (cache_size)*sizeof(Feature));
+                            mram_read((__mram_ptr void const*)(fr_m+cache_idx*cache_size*sizeof(struct Feature)), fr, (cache_size)*sizeof(struct Feature));
                             cur_fr_idx = cache_idx;
                         }
 
@@ -147,7 +147,7 @@ int main() {
                             }
                             cur_check++;
                             if (cache_offset + cur_check > cache_size) {
-                                mram_read((__mram_ptr void const*)(fr_m+(cache_idx+1)*cache_size*sizeof(Feature)), fr, (cache_size)*sizeof(Feature));
+                                mram_read((__mram_ptr void const*)(fr_m+(cache_idx+1)*cache_size*sizeof(struct Feature)), fr, (cache_size)*sizeof(struct Feature));
                                 cur_fr_idx = cache_idx + 1;
                                 cache_offset = -cur_check;
                             }
