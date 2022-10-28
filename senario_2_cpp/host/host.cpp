@@ -37,7 +37,7 @@ void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
 void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].hash_fc_start, graph.hash_fc);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].hash_fr_Start, graph.hash_fr);
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].hash_fr_start, graph.hash_fr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].fc_start, graph.fc);

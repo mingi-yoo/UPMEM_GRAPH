@@ -384,9 +384,9 @@ static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     // Second check, edge size is equal
 
     for (uint32_t i = 0; i < n; i++) {
-        if (subgraph.hash_fc[hash_key] + subgraph.hash_fr[hash_key] != subgraph.dpu_param[i][0].num_e) {
+        if (subgraph.hash_fc[hash_key] + subgraph.hash_fr[i][hash_key] != subgraph.dpu_param[i][0].num_e) {
             cout<<"Non-Pass!"<<endl;
-            cout<<i<<" has "<<subgraph.dpu_param[i][0].num_e<<" edges but it has "<<subgraph.hash_fc[hash_key] + subgraph.hash_fr[hash_key]<<" features!"<<endl;
+            cout<<i<<" has "<<subgraph.dpu_param[i][0].num_e<<" edges but it has "<<subgraph.hash_fc[hash_key] + subgraph.hash_fr[i][hash_key]<<" features!"<<endl;
         }
     }
 
