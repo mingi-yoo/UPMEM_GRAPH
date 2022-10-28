@@ -340,4 +340,57 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     }
 }
 
+static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
+    // First check, all of vector size is equal
+    vector<uint32_t> nonpass;
+    cout<<"First check, all of vector size is equal..."<<endl;
+    for (uint32_t i = 0; i < n; i++) {
+        if (subgraph.hash_fc.size() != (subgraph.dpu_param[i][0].hash_fr_start - subgraph.dpu_param[i][0].hash_fc_start) / sizeof(uint32_t)) {
+            nonpass.push_back(i);
+            continue;
+        }
+        if (subgraph.hash_fr[i].size() != (subgraph.dpu_param[i][0].row_ptr_start - subgraph.dpu_param[i][0].hash_fr_start) / sizeof(uint32_t)) {
+            nonpass.push_back(i);
+            continue;
+        }
+        if (subgraph.row_ptr[i].size() != (subgraph.dpu_param[i][0].col_idx_start - subgraph.dpu_param[i][0].row_ptr_start) / sizeof(uint32_t)) {
+            nonpass.push_back(i);
+            continue;
+        }
+        if (subgraph.col_idx[i].size() != (subgraph.dpu_param[i][0].fc_start - subgraph.dpu_param[i][0].col_idx_start) / sizeof(uint32_t)) {
+            nonpass.push_back(i);
+            continue;
+        }
+        if (subgraph.fc.size() != (subgraph.dpu_param[i][0].fr_start - subgraph.dpu_param[i][0].fc_start) / sizeof(Feature)) {
+            nonpass.push_back(i);
+            continue;
+        }
+        if (subgraph.fr.size() != (subgraph.dpu_param[i][0].output_start - subgraph.dpu_param[i][0].fr_start) / sizeof(Feature)) {
+            nonpass.push_back(i);
+            continue;
+        }
+    }
+
+    if (!nonpass.empty()) {
+        cout<<"Non-Pass!: ";
+        for (uint32_t i = 0; i < nonpass.size(); i++)
+            cout<<nonpass[i]<<" ";
+        cout<<endl;
+        nonpass.clear();
+    }
+    else
+        cout<<"Pass!"<<endl;
+
+    // Second check, edge size is equal
+
+    for (uint32_t i = 0; i < n; i++) {
+        if (subgraph.hash_fc[hash_key] + subgraph.hash_fr[hash_key] != subgraph.dpu_param[i][0].num_e) {
+            cout<<"Non-Pass!"<<endl;
+            cout<<i<<" has "<<subgraph.dpu_param[i][0].num_e<<" edges but it has "<<subgraph.hash_fc[hash_key] + subgraph.hash_fr[hash_key]<<" features!"<<endl;
+        }
+    }
+
+    cout<<"Check End"<<endl;
+}
+
 #endif
