@@ -48,10 +48,10 @@ int main() {
     uint32_t cache_size = 64;
     uint32_t output_cache_size = 64;
 
-    uint32_t hash_fc = mem_alloc(cache_size*sizeof(uint32_t));
+    uint32_t* hash_fc = mem_alloc(cache_size*sizeof(uint32_t));
     mram_read((__mram_ptr void const*)hash_fc_m, hash_fc, (cache_size+2)*sizeof(uint32_t));
 
-    uint32_t hash_fr = mem_alloc(cache_size*sizeof(uint32_t));
+    uint32_t* hash_fr = mem_alloc(cache_size*sizeof(uint32_t));
     mram_read((__mram_ptr void const*)hash_fr_m, hash_fr, (cache_size+2)*sizeof(uint32_t));
 
     struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
