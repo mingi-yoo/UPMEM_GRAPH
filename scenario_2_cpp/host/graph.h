@@ -301,9 +301,9 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     for (uint32_t i = 0; i < hash_key; i++) {
         subgraph.hash_fc[i] = edge_acm;
         for (uint32_t j = 0; j < col_c[i].size(); j++) {
-            subgraph.fc[edge_acm].v_id = col_c[i][j];
-            subgraph.fc[edge_acm].out_deg = subgraph.fc[col_c[i][j]].out_deg;
-            subgraph.fc[edge_acm].value = subgraph.fc[col_c[i][j]].value;
+            fc_new[edge_acm].v_id = col_c[i][j];
+            fc_new[edge_acm].out_deg = subgraph.fc[col_c[i][j]].out_deg;
+            fc_new[edge_acm].value = subgraph.fc[col_c[i][j]].value;
             edge_acm++;
         }
     }
