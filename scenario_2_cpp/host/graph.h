@@ -337,6 +337,13 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
         subgraph.dpu_param[i][0].fr_start = subgraph.dpu_param[i][0].fc_start + static_cast<unsigned>(fc_size * sizeof(Feature));
         subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].fr_start + static_cast<unsigned>(fr_size * sizeof(Feature));
     }
+
+    for (uint32_t i = 0; i < n; i++) {
+        cout<<"DPU "<<i<<endl;
+        for (uint32_t j = 0; j < 64; j++) {
+            cout<<"hash info: "<<subgraph.hash_fc[j]<<", "<<subgraph.hash_fr[i][j]<<", "<<subgraph.fc[j]<<", "<<subgraph.fr[i][j]<<endl;
+        }
+    }
 }
 
 static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {

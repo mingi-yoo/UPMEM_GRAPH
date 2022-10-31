@@ -127,6 +127,7 @@ int main(int argc, char** argv) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
         }
+        /*
         system.copy(result, static_cast<unsigned>(subgraph.dpu_param[0][0].num_v_origin * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
 
         cout<<"OUTPUT RECEIVED"<<endl;
@@ -137,6 +138,7 @@ int main(int argc, char** argv) {
             }
             cout<<endl;
         }
+        */
         
 
     } catch (const DpuError & e) {
