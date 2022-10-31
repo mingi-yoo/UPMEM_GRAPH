@@ -341,7 +341,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     for (uint32_t i = 0; i < n; i++) {
         cout<<"DPU "<<i<<endl;
         for (uint32_t j = 0; j < 64; j++) {
-            cout<<"hash info: "<<subgraph.hash_fc[j]<<", "<<subgraph.hash_fr[i][j]<<", "<<subgraph.fc[j]<<", "<<subgraph.fr[i][j]<<endl;
+            cout<<"hash info: "<<subgraph.hash_fc[j]<<", "<<subgraph.hash_fr[i][j]<<", "<<subgraph.fc[j].v_id<<", "<<subgraph.fr[i][j].v_id<<endl;
         }
     }
 }

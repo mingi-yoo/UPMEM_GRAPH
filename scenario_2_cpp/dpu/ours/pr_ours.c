@@ -48,10 +48,10 @@ int main() {
     uint32_t cache_size = 64;
     uint32_t output_cache_size = 64;
 
-    uint32_t* hash_fc = mem_alloc(cache_size*sizeof(uint32_t));
+    uint32_t* hash_fc = mem_alloc((cache_size+2)*sizeof(uint32_t));
     mram_read((__mram_ptr void const*)hash_fc_m, hash_fc, (cache_size+2)*sizeof(uint32_t));
 
-    uint32_t* hash_fr = mem_alloc(cache_size*sizeof(uint32_t));
+    uint32_t* hash_fr = mem_alloc((cache_size+2)*sizeof(uint32_t));
     mram_read((__mram_ptr void const*)hash_fr_m, hash_fr, (cache_size+2)*sizeof(uint32_t));
 
     struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
@@ -75,11 +75,8 @@ int main() {
 
     uint32_t num_v = g_info->num_v;
     uint32_t num_t = g_info->num_t;
-    for (uint32_t i = 0; i < cache_size; i++) {
-        printf("hash info: %d, %d, %f, %f\n", hash_fc[i], hash_fr[i], fc[i].v_id, fr[i].v_id);
-    }
 
-    /*
+    
     for (uint32_t i = 0; i < num_t; i++) {
         for (uint32_t j = 0; j < num_v; j++) {
             row_ptr = seqread_get(row_ptr, sizeof(uint32_t), &row_ptr_reader);
@@ -182,7 +179,7 @@ int main() {
                 mram_write(output, (__mram_ptr void*)(output_m + output_idx*output_cache_size*sizeof(float)), output_cache_size*4);
         }
     }
-    */
+    
     printf("DPU PAGERANK COMPLETE\n");
 
     return 0;
