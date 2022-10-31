@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 
         auto system = DpuSet::allocate(NR_DPUS);
         // remove the comment line for check baseline (non-partition)
-        /*
+        
         auto dpu_baseline = system.dpus()[0];
         dpu_baseline->load(DPU_BASELINE);
 
@@ -103,11 +103,11 @@ int main(int argc, char** argv) {
         cout<<"OUTPUT RECEIVED"<<endl;
         for (uint32_t i = 0; i < 10; i++)
             cout<<"DPU RESULT: "<<result[0][i]<<endl;
-        */
+        
         Graph subgraph = divide_graph(graph, NR_DPUS, num_t);
         divide_feature(subgraph, NR_DPUS, hash_key);
 
-        check_integrity(subgraph, NR_DPUS, hash_key);
+        //check_integrity(subgraph, NR_DPUS, hash_key);
 
         system.load(DPU_OURS);
 
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
 
         // if graph partitioning dose not have any troble, then remove the comment line
-        /*
+        
         begin = chrono::steady_clock::now();
         system.exec();
         end = chrono::steady_clock::now();
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
         }
-        system.copy(result, static_cast<unsigned>(subgraph.value.size() * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
+        system.copy(result, static_cast<unsigned>(subgraph.dpu_param[0][0].num_v_origin * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
 
         cout<<"OUTPUT RECEIVED"<<endl;
         for (uint32_t i = 0; i < NR_DPUS; i++) {
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
             }
             cout<<endl;
         }
-        */
+        
 
     } catch (const DpuError & e) {
         cerr << e.what() << endl;
