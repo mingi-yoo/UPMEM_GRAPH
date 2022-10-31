@@ -348,8 +348,41 @@ static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
         cout<<"hash_fc: "<<subgraph.hash_fc.size()<<" "<< (subgraph.dpu_param[i][0].hash_fr_start - subgraph.dpu_param[i][0].hash_fc_start) / sizeof(uint32_t) << endl;
         cout<<"hash_fr: "<<subgraph.hash_fr[i].size()<<" "<< (subgraph.dpu_param[i][0].row_ptr_start - subgraph.dpu_param[i][0].hash_fr_start) / sizeof(uint32_t) << endl;
         cout<<"fc: "<<subgraph.fc.size()<<" "<< (subgraph.dpu_param[i][0].fr_start - subgraph.dpu_param[i][0].fc_start) / sizeof(Feature) << endl;
-        cout<<"fr: "<<subgraph.fr.size()<<" "<< (subgraph.dpu_param[i][0].output_start - subgraph.dpu_param[i][0].fr_start) / sizeof(Feature) << endl;
+        cout<<"fr: "<<subgraph.fr[i].size()<<" "<< (subgraph.dpu_param[i][0].output_start - subgraph.dpu_param[i][0].fr_start) / sizeof(Feature) << endl;
         cout<<"------------------------"<<endl;
+    }
+
+    cout<<"Second check, all of feature can include all edges..."<<endl;
+    for (uint32_t i = 0; i < n; i++) {
+        cout<<"Check "<<i<<endl;
+        vector<bool> check(subgraph.dpu_param[i][0].num_v_origin);
+        uint32_t f_cnt = 0;
+        uint32_t total_f = subgraph.hash_fc[hash_key] + subgraph.hash_fr[i][hash_key];
+
+        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_e; j++)
+            check[subgraph.col_idx[i][j]] = true;
+        for (uint32_t j = 0; j < check.size(); j++) {
+            if (check[j])
+                f_cnt++;
+        }
+
+        if (f_cnt != total_f) {
+            cout<<"Number of Features is different: "<<f_cnt<<", "<<total_f<<endl;
+            continue;
+        }
+
+        for (uint32_t j = 0; j < subgraph.hash_fc[hash_key]; j++)
+            check[subgraph.fc[j].v_id] = false;
+
+        for (uint32_t j = 0; j < subgraph.hash_fr[i][hash_key]; j++)
+            check[subgraph.fr[i][j].v_id] = false;
+
+        for (uint32_t j = 0; j < check.size(); j++) {
+            if (check[j]) {
+                cout<<"Feature cannot include all of edges!"<<endl;
+                break;
+            }
+        }
     }
 
     cout<<"Check End"<<endl;
