@@ -78,7 +78,6 @@ int main(int argc, char** argv) {
         cout<<"GRAPH READ COMPLETE"<<endl;
 
         auto system = DpuSet::allocate(NR_DPUS);
-        // remove the comment line for check baseline (non-partition)
         
         auto dpu_baseline = system.dpus()[0];
         dpu_baseline->load(DPU_BASELINE);
@@ -116,8 +115,6 @@ int main(int argc, char** argv) {
         populate_mram_parallel(system, subgraph);
         end = chrono::steady_clock::now();
         cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
-
-        // if graph partitioning dose not have any troble, then remove the comment line
         
         begin = chrono::steady_clock::now();
         system.exec();
