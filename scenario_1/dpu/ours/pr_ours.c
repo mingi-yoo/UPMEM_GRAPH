@@ -86,7 +86,7 @@ int main() {
                 col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
             }
             row_prev = *row_ptr;
-            out_value = base_score + kdamp * incoming_total;
+            out_value = kdamp * incoming_total;
             uint32_t output_idx = j / output_cache_size;
             uint32_t output_offset = j % output_cache_size;
             if (output_offset == 0 && i >= 1)
