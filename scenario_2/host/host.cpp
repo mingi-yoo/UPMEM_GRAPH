@@ -145,9 +145,10 @@ int main(int argc, char** argv) {
             auto dpu = system.dpus()[i];
             dpu->log(cout);
         }
+        uint32_t output_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v);
 
         begin = chrono::steady_clock::now();
-        system.copy(result, static_cast<unsigned>(subgraph.dpu_param[0][0].num_v * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
+        system.copy(result, static_cast<unsigned>(output_size * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
         end = chrono::steady_clock::now();
         time_ours.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
 
