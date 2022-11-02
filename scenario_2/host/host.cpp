@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
 void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
     cout<<"BASELINE TIME RESULT"<<endl;
     cout<<"-------------------------------"<<endl;
-    cout<<"TRANSFER TIME: "<<time_base.tranfer<<endl;
+    cout<<"TRANSFER TIME: "<<time_base.transfer<<endl;
     cout<<"DPU TIME: "<<time_base.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_base.output_return<<endl<<endl;
     cout<<"TOTAL TIME: "<<time_base.total<<endl;
@@ -182,7 +182,7 @@ void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
 
     cout<<"OURS TIME RESULT"<<endl;
     cout<<"-------------------------------"<<endl;
-    cout<<"TRANSFER TIME: "<<time_ours.tranfer<<endl;
+    cout<<"TRANSFER TIME: "<<time_ours.transfer<<endl;
     cout<<"DPU TIME: "<<time_ours.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_ours.output_return<<endl<<endl;
     cout<<"TOTAL TIME: "<<time_ours.total<<endl;

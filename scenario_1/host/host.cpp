@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     chrono::steady_clock::time_point begin, end;
 
     int opt = 0;
-    while((opt = getopt(argc, argv, "i:o:t:h:")) != EOF) {
+    while((opt = getopt(argc, argv, "i:o:t:")) != EOF) {
         switch (opt) {
             case 'i':
                 csr_path = optarg;
@@ -73,9 +73,6 @@ int main(int argc, char** argv) {
                 break;
             case 't':
                 num_t = stoi(optarg);
-                break;
-            case 'h':
-                hash_key = stoi(optarg);
                 break;
             case '?':
                 cout <<"WRONG OPTIONS"<<endl;
@@ -202,7 +199,7 @@ int main(int argc, char** argv) {
 void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
     cout<<"BASELINE TIME RESULT"<<endl;
     cout<<"-------------------------------"<<endl;
-    cout<<"TRANSFER TIME: "<<time_base.tranfer<<endl;
+    cout<<"TRANSFER TIME: "<<time_base.transfer<<endl;
     cout<<"DPU TIME: "<<time_base.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_base.output_return<<endl<<endl;
     cout<<"TOTAL TIME: "<<time_base.total<<endl;
@@ -210,7 +207,7 @@ void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
 
     cout<<"OURS TIME RESULT"<<endl;
     cout<<"-------------------------------"<<endl;
-    cout<<"TRANSFER TIME: "<<time_ours.tranfer<<endl;
+    cout<<"TRANSFER TIME: "<<time_ours.transfer<<endl;
     cout<<"DPU TIME: "<<time_ours.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_ours.output_return<<endl<<endl;
     cout<<"TOTAL TIME: "<<time_ours.total<<endl;
