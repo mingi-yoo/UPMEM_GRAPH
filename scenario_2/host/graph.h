@@ -334,12 +334,12 @@ static void renumbering(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32
     for (uint32_t i = 0; i < n; i++) {
         for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_v; j++) {
             vector<uint32_t> col_temp;
-            row_start = subgraph.row_ptr[i][j];
-            row_end = subgraph.row_ptr[i][j+1];
+            uint32_t row_start = subgraph.row_ptr[i][j];
+            uint32_t row_end = subgraph.row_ptr[i][j+1];
             // first, col mapping
             for (uint32_t k = row_start; k < row_end; k++) {
                 uint32_t col = subgraph.col_idx[i][k];
-                col_temp.push_back(col);
+                col_temp.push_back(renumber_table[i][col]);
             }
             // second, sorting
             sort(col_temp.begin(), col_temp.end());
@@ -356,8 +356,6 @@ static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
     for (uint32_t i = 0; i < n; i++) {
         cout<<"Check "<<i<<endl;
         cout<<"------------------------"<<endl;
-        cout<<"hash_fc: "<<subgraph.hash_fc.size()<<" "<< (subgraph.dpu_param[i][0].hash_fr_start - subgraph.dpu_param[i][0].hash_fc_start) / sizeof(uint32_t) << endl;
-        cout<<"hash_fr: "<<subgraph.hash_fr[i].size()<<" "<< (subgraph.dpu_param[i][0].row_ptr_start - subgraph.dpu_param[i][0].hash_fr_start) / sizeof(uint32_t) << endl;
         cout<<"fc: "<<subgraph.fc.size()<<" "<< (subgraph.dpu_param[i][0].fr_start - subgraph.dpu_param[i][0].fc_start) / sizeof(Feature) << endl;
         cout<<"fr: "<<subgraph.fr[i].size()<<" "<< (subgraph.dpu_param[i][0].output_start - subgraph.dpu_param[i][0].fr_start) / sizeof(Feature) << endl;
         cout<<"------------------------"<<endl;
@@ -368,7 +366,7 @@ static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
         cout<<"Check "<<i<<endl;
         vector<bool> check(subgraph.dpu_param[i][0].num_v_origin);
         uint32_t f_cnt = 0;
-        uint32_t total_f = subgraph.hash_fc[hash_key] + subgraph.hash_fr[i][hash_key];
+        uint32_t total_f = subgraph.dpu_param[i][0].num_fc + subgraph.dpu_param[i][0].num_fr;
 
         for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_e; j++)
             check[subgraph.col_idx[i][j]] = true;
@@ -382,10 +380,10 @@ static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
             continue;
         }
 
-        for (uint32_t j = 0; j < subgraph.hash_fc[hash_key]; j++)
+        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_f; j++)
             check[subgraph.fc[j].v_id] = false;
 
-        for (uint32_t j = 0; j < subgraph.hash_fr[i][hash_key]; j++)
+        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_fr; j++)
             check[subgraph.fr[i][j].v_id] = false;
 
         for (uint32_t j = 0; j < check.size(); j++) {
