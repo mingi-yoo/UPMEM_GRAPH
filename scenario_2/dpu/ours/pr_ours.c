@@ -30,8 +30,6 @@ int main() {
     printf("%d %d %d %d\n",g_info->num_v_origin, g_info->num_v, g_info->num_e, g_info->num_t);
 
     // initialize data offset
-    uint32_t hash_fc_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->hash_fc_start;
-    uint32_t hash_fr_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->hash_fr_start;
     uint32_t row_ptr_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->row_ptr_start;
     uint32_t col_idx_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->col_idx_start;
     uint32_t fc_m = (uint32_t)DPU_MRAM_HEAP_POINTER + g_info->fc_start;
@@ -48,12 +46,6 @@ int main() {
     uint32_t cache_size = 64;
     uint32_t output_cache_size = 64;
 
-    uint32_t* hash_fc = mem_alloc((cache_size+2)*sizeof(uint32_t));
-    mram_read((__mram_ptr void const*)hash_fc_m, hash_fc, (cache_size+2)*sizeof(uint32_t));
-
-    uint32_t* hash_fr = mem_alloc((cache_size+2)*sizeof(uint32_t));
-    mram_read((__mram_ptr void const*)hash_fr_m, hash_fr, (cache_size+2)*sizeof(uint32_t));
-
     struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
     mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));    
 
@@ -68,8 +60,6 @@ int main() {
     uint32_t row_prev = *row_ptr;
     float base_score = 1.0f / g_info->num_v_origin;
 
-    uint32_t cur_hash_fc_idx = 0;
-    uint32_t cur_hash_fr_idx = 0;
     uint32_t cur_fc_idx = 0;
     uint32_t cur_fr_idx = 0;
 
@@ -86,74 +76,25 @@ int main() {
 
             for (uint32_t k = 0; k < in_deg; k++) {
                 uint32_t col = *col_idx;
-                // check hash value
-                uint32_t hash_val = col % g_info->hash_key;
-
-                // first_check: fc
-                bool catch = false;
-                uint32_t hash_idx = hash_val / cache_size;
-                uint32_t hash_offset = hash_val % cache_size;
-                if (cur_hash_fc_idx != hash_idx) {
-                    mram_read((__mram_ptr void const*)(hash_fc_m+hash_idx*cache_size*sizeof(uint32_t)), hash_fc, (cache_size+2)*sizeof(uint32_t));
-                    cur_hash_fc_idx = hash_idx;
-                }
                 uint32_t cache_idx, cache_offset;
-                if (hash_fc[hash_offset] != hash_fc[hash_offset+1]) {
-                    uint32_t need_to_check = hash_fc[hash_offset+1] - hash_fc[hash_offset];
-                    uint32_t cur_check = 0;
-
-                    cache_idx = hash_fc[hash_offset] / cache_size;
-                    cache_offset = hash_fc[hash_offset] % cache_size;
+                if (col < g_info->num_fc) {
+                    cache_idx = col/cache_size;
+                    cache_offset = col%cache_size;
                     if (cur_fc_idx != cache_idx) {
-                        mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(struct Feature)), fc, (cache_size)*sizeof(struct Feature));
+                        mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(struct Feature)), fc, cache_size*sizeof(struct Feature));
                         cur_fc_idx = cache_idx;
                     }
-
-                    while (cur_check < need_to_check) {
-                        if (fc[cache_offset + cur_check].v_id == col) {
-                            catch = true;
-                            incoming_total += fc[cache_offset + cur_check].value / fc[cache_offset + cur_check].out_deg;
-                            break;
-                        }
-                        cur_check++;
-                        if (cache_offset + cur_check > cache_size) {
-                            mram_read((__mram_ptr void const*)(fc_m+(cache_idx+1)*cache_size*sizeof(struct Feature)), fc, (cache_size)*sizeof(struct Feature));
-                            cur_fc_idx = cache_idx + 1;
-                            cache_offset = -cur_check;
-                        }
-                    }
+                    incoming_total += fc[cache_offset].value / fc[cache_offset].out_deg;
                 }
-                // second_check: fr
-                if (!catch) {
-                     if (cur_hash_fr_idx != hash_idx) {
-                        mram_read((__mram_ptr void const*)(hash_fr_m+hash_idx*cache_size*sizeof(uint32_t)), hash_fr, (cache_size+2)*sizeof(uint32_t));
-                        cur_hash_fr_idx = hash_idx;
+                else {
+                    col -= g_info->num_fc;
+                    cache_idx = col/cache_size;
+                    cache_offset = col%cache_size;
+                    if (cur_fr_idx != cache_idx) {
+                        mram_read((__mram_ptr void const*)(fr_m+cache_idx*cache_size*sizeof(struct Feature)), fr, cache_size*sizeof(struct Feature));
+                        cur_fr_idx = cache_idx;
                     }
-                    if (hash_fr[hash_offset] != hash_fr[hash_offset+1]) {
-                        uint32_t need_to_check = hash_fr[hash_offset+1] - hash_fr[hash_offset];
-                        uint32_t cur_check = 0;
-
-                        cache_idx = hash_fr[hash_offset] / cache_size;
-                        cache_offset = hash_fr[hash_offset] % cache_size;
-                        if (cur_fr_idx != cache_idx) {
-                            mram_read((__mram_ptr void const*)(fr_m+cache_idx*cache_size*sizeof(struct Feature)), fr, (cache_size)*sizeof(struct Feature));
-                            cur_fr_idx = cache_idx;
-                        }
-
-                        while (cur_check < need_to_check) {
-                            if (fr[cache_offset + cur_check].v_id == col) {
-                                catch = true;
-                                incoming_total += fr[cache_offset + cur_check].value / fr[cache_offset + cur_check].out_deg;
-                                break;
-                            }
-                            cur_check++;
-                            if (cache_offset + cur_check > cache_size) {
-                                mram_read((__mram_ptr void const*)(fr_m+(cache_idx+1)*cache_size*sizeof(struct Feature)), fr, (cache_size)*sizeof(struct Feature));
-                                cur_fr_idx = cache_idx + 1;
-                                cache_offset = -cur_check;
-                            }
-                        }
-                    } 
+                    incoming_total += fr[cache_offset].value / fr[cache_offset].out_deg;
                 }
                 col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
             }

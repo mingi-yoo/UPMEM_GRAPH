@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <map>
 #include <limits>
 #include <chrono>
 
@@ -45,8 +46,6 @@ void populate_mram(DpuSetOps& dpu, Graph& graph, uint32_t id) {
 
 void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].hash_fc_start, graph.hash_fc);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].hash_fr_start, graph.hash_fr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].fc_start, graph.fc);
@@ -58,14 +57,13 @@ int main(int argc, char** argv) {
     string csr_path;
     string output_path;
     uint32_t num_t = 1;
-    uint32_t hash_key = 64;
 
     TimeRecord time_base, time_ours;
 
     chrono::steady_clock::time_point begin, end;
 
     int opt = 0;
-    while((opt = getopt(argc, argv, "i:o:t:h:")) != EOF) {
+    while((opt = getopt(argc, argv, "i:o:t:")) != EOF) {
         switch (opt) {
             case 'i':
                 csr_path = optarg;
@@ -75,9 +73,6 @@ int main(int argc, char** argv) {
                 break;
             case 't':
                 num_t = stoi(optarg);
-                break;
-            case 'h':
-                hash_key = stoi(optarg);
                 break;
             case '?':
                 cout <<"WRONG OPTIONS"<<endl;
@@ -123,7 +118,9 @@ int main(int argc, char** argv) {
         time_base.total = time_base.transfer + time_base.run + time_base.output_return;
 
         Graph subgraph = divide_graph(graph, NR_DPUS, num_t);
-        divide_feature(subgraph, NR_DPUS, hash_key);
+        vector<map<uint32_t, uint32_t>> renumber_table;
+        divide_feature(subgraph, NR_DPUS, renumber_table);
+        renumbering(subgraph, NR_DPUS, renumber_table);
 
         //check_integrity(subgraph, NR_DPUS, hash_key);
 
