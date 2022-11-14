@@ -203,7 +203,7 @@ void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
     cout<<"TRANSFER TIME: "<<time_base.transfer<<endl;
     cout<<"DPU TIME: "<<time_base.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_base.output_return<<endl<<endl;
-    cout<<"TOTAL TIME: "<<time_base.total<<endl;
+    cout<<"BASELINE TOTAL TIME: "<<time_base.total<<endl;
     cout<<"-------------------------------"<<endl<<endl;
 
     cout<<"OURS TIME RESULT"<<endl;
@@ -211,7 +211,7 @@ void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
     cout<<"TRANSFER TIME: "<<time_ours.transfer<<endl;
     cout<<"DPU TIME: "<<time_ours.run<<endl;
     cout<<"OUTPUT RECEIVED TIME: "<<time_ours.output_return<<endl<<endl;
-    cout<<"TOTAL TIME: "<<time_ours.total<<endl;
+    cout<<"OURS TOTAL TIME: "<<time_ours.total<<endl;
     cout<<"-------------------------------"<<endl<<endl;
 
     cout<<"SPEED UP (BASELINE / OURS): "<<time_base.total / time_ours.total<<endl;
