@@ -54,7 +54,7 @@ int main() {
     float kdamp = 0.85;
 
     uint32_t row_prev = *row_ptr;
-    float base_score = 1.0f / g_info->num_v_origin;
+    float base_score = (1.0f - kdamp) / g_info->num_v_origin;
 
     uint32_t cur_cache_idx = 0;
 
