@@ -38,7 +38,7 @@ int main() {
     else
         num_v_tasklet = num_v_per_tasklet;
 
-    printf("%d %d %d %d %d\n",g_info->num_v_origin, g_info->num_v, g_info->num_e, g_info->num_t, num_v_per_tasklet);
+    printf("%d: %d %d %d %d %d\n",me(), g_info->num_v_origin, g_info->num_v, g_info->num_e, g_info->num_t, num_v_per_tasklet);
 
     
     if (num_v_tasklet > 0) {
@@ -57,7 +57,7 @@ int main() {
         uint32_t* col_idx = seqread_init(seqread_alloc(), (__mram_ptr void*)(col_idx_m + col_start*sizeof(uint32_t)), &col_idx_reader);
 
         uint32_t cache_size = 64;
-        uint32_t output_cache_size = 64;
+        uint32_t output_cache_size = 2;
 
         struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
         mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));

@@ -53,7 +53,7 @@ void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
 }
 
 void run_async(DpuSet& system, unsigned dummy) {
-    sysem.exec();
+    system.exec();
 }
 
 int main(int argc, char** argv) {

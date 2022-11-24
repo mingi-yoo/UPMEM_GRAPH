@@ -45,7 +45,7 @@ int main() {
 
     uint32_t value_cache_size = 64;
     uint32_t out_deg_cache_size = 64;
-    uint32_t output_cache_size = 64;
+    uint32_t output_cache_size = 2;
 
     float* value = mem_alloc(value_cache_size*sizeof(float));
     mram_read((__mram_ptr void const*)value_m, value, value_cache_size*4);
