@@ -52,6 +52,10 @@ void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].fr_start, graph.fr);
 }
 
+void run_async(DpuSet& system, unsigned dummy) {
+    sysem.exec();
+}
+
 int main(int argc, char** argv) {
     // read graph file
     string csr_path;
@@ -96,7 +100,9 @@ int main(int argc, char** argv) {
         time_base.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
         // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
         begin = chrono::steady_clock::now();
-        dpu_baseline->exec();
+        auto baseline_async = dpu_baseline->async();
+        baseline_async.call(run_async);
+        baseline_async.sync();
         end = chrono::steady_clock::now();
         time_base.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
         // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
@@ -134,7 +140,9 @@ int main(int argc, char** argv) {
         // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
         
         begin = chrono::steady_clock::now();
-        system.exec();
+        auto system_async = system.async();
+        system_async.call(run_async);
+        system_async.sync();
         end = chrono::steady_clock::now();
         time_ours.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
         // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
