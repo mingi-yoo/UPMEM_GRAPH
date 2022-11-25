@@ -89,7 +89,7 @@ int main() {
             out_value = kdamp * incoming_total;
             uint32_t output_idx = j / output_cache_size;
             uint32_t output_offset = j % output_cache_size;
-            if (output_offset == 0 && i > 1)
+            if (output_offset == 0 && i >= 1)
                 mram_read((__mram_ptr void const*)(output_m + output_idx*output_cache_size*sizeof(float)), output, output_cache_size*4);
 
             if (i == 0)

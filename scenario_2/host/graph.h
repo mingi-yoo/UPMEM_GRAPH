@@ -332,7 +332,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, vector<map<uint32_t, uin
 
 static void renumbering(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32_t>>& renumber_table) {
     for (uint32_t i = 0; i < n; i++) {
-        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_v; j++) {
+        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_v * subgraph.dpu_param[i][0].num_t; j++) {
             vector<uint32_t> col_temp;
             uint32_t row_start = subgraph.row_ptr[i][j];
             uint32_t row_end = subgraph.row_ptr[i][j+1];

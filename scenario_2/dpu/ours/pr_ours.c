@@ -38,7 +38,7 @@ int main() {
     else
         num_v_tasklet = num_v_per_tasklet;
 
-     printf("%d: %d %d %d %d %d\n",me(), g_info->num_v_origin, g_info->num_v, g_info->num_e, g_info->num_t, num_v_per_tasklet);
+     printf("%d: %d %d %d %d %d\n",me(), g_info->num_v_origin, g_info->num_v, g_info->num_e, g_info->num_t, num_v_tasklet);
 
     if (num_v_tasklet > 0) {
         // initialize data offset
@@ -115,7 +115,7 @@ int main() {
                 out_value = kdamp * incoming_total;
                 uint32_t output_idx = j / output_cache_size;
                 uint32_t output_offset = j % output_cache_size;
-                if (output_offset == 0 && i > 1)
+                if (output_offset == 0 && i >= 1)
                     mram_read((__mram_ptr void const*)(output_m + output_idx*output_cache_size*sizeof(float)), output, output_cache_size*sizeof(float));
 
                 if (i == 0)
