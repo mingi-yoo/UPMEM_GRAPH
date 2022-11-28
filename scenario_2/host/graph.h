@@ -288,7 +288,7 @@ static void renumbering(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32
 }
 
 static void tiling(Graph& subgraph, uint32_t n, uint32_t t) {
-    uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
+    uint32_t num_v_origin = subgraph.dpu_param[0][0].num_v_origin;
     uint32_t q_t = num_v_origin / t;
     uint32_t q_r = num_v_origin - q_t * t;
 
@@ -299,7 +299,7 @@ static void tiling(Graph& subgraph, uint32_t n, uint32_t t) {
     for (uint32_t i = 0; i < q_r; i++)
         unit_t[i]++;
     for (uint32_t i = 1; i < t; i++)
-        unit_t[i] += unit_[i-1];
+        unit_t[i] += unit_t[i-1];
 
     uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v * t + 1);
     uint32_t cur_row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v + 1);
