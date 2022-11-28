@@ -106,6 +106,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
 
         subgraph.dpu_param[i][0].num_v_origin = num_v_origin;
         subgraph.dpu_param[i][0].num_e = num_e;
+        subgraph.dpu_param[i][0].num_t = 1;
 
         row_start = row_end;
     }
@@ -127,9 +128,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i][0].num_v = unit_v[i];
         row_end += unit_v[i];
 
-        uint32_t offset = subgraph.row_ptr[i][row_start];
-
-        subgraph.row_ptr[i][0] = 0;
+        uint32_t offset = graph.row_ptr[0][row_start];
 
         uint32_t idx = 0;
         for (uint32_t j = row_start; j <= row_end; j++) {
@@ -354,10 +353,10 @@ static void tiling(Graph& subgraph, uint32_t n, uint32_t t) {
             }
         }
 
-        subgraph.dpu_param[i][0].col_idx_start += offset;
-        subgraph.dpu_param[i][0].fc_start += offset;
-        subgraph.dpu_param[i][0].fr_start += offset;
-        subgraph.dpu_param[i][0].output_start += offset;
+        subgraph.dpu_param[i][0].col_idx_start += offset * sizeof(uint32_t);
+        subgraph.dpu_param[i][0].fc_start += offset * sizeof(uint32_t);
+        subgraph.dpu_param[i][0].fr_start += offset * sizeof(uint32_t);
+        subgraph.dpu_param[i][0].output_start += offset * sizeof(uint32_t);
 
         for (uint32_t j = 0; j < t; j++) {
             vertices[j].clear();
