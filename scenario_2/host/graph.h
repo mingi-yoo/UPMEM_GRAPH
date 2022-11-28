@@ -71,7 +71,7 @@ static Graph read_csr(string csr_path) {
     return graph;
 }
 
-static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
+static Graph divide_graph(Graph& graph, uint32_t n) {
     Graph subgraph;
 
     for (uint32_t i = 0; i < n; i++) {
@@ -83,11 +83,7 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
     uint32_t q = num_v_origin / n;
     uint32_t r = num_v_origin - q * n;
 
-    uint32_t q_t = num_v_origin / t;
-    uint32_t q_r = num_v_origin - q_t * t;
-
     uint32_t *unit_v = new uint32_t[n];
-    uint32_t *unit_t = new uint32_t[t];
 
     for (uint32_t i = 0; i < n; i++) {
         unit_v[i] = q;
@@ -95,28 +91,6 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
     for (uint32_t i = 0; i < r; i++) {
         unit_v[i]++;
     }
-
-    // this is temporal (only used in this function)
-    for (uint32_t i = 0; i < t; i++) {
-        unit_t[i] = q_t;
-    }
-    for (uint32_t i = 0; i < q_r; i++) {
-        unit_t[i]++;
-    }
-    for (uint32_t i = 1; i < t; i++) {
-        unit_t[i] += unit_t[i-1];
-    }
-
-    cout<<"partitioned vertex check"<<endl;
-    for (uint32_t i = 0; i < n; i++) {
-        cout<<unit_v[i]<<" ";
-    }
-    cout<<endl;
-    cout<<"partitioned tile check"<<endl;
-    for (uint32_t i = 0; i < t; i++) {
-        cout<<unit_t[i]<<" ";
-    }
-    cout<<endl;
 
     uint32_t col_idx_max = 0;
     uint32_t row_start = 0;
@@ -132,12 +106,11 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
 
         subgraph.dpu_param[i][0].num_v_origin = num_v_origin;
         subgraph.dpu_param[i][0].num_e = num_e;
-        subgraph.dpu_param[i][0].num_t = t;
 
         row_start = row_end;
     }
 
-    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]*t+1);
+    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]+1);
     uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
     uint32_t feature_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
 
@@ -150,54 +123,24 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
     row_start = 0;
     row_end = 0;
 
-    vector<vector<uint32_t>> vertices;
-    vector<vector<uint32_t>> edges;
-    vector<uint32_t> edge_acm(t);
-
-    for (uint32_t i = 0; i < t; i++) {
-        vertices.push_back(vector<uint32_t> ());
-        edges.push_back(vector<uint32_t> ());
-    }
-
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param[i][0].num_v = unit_v[i];
         row_end += unit_v[i];
 
+        uint32_t offset = subgraph.row_ptr[i][row_start];
+
         subgraph.row_ptr[i][0] = 0;
 
-        for (uint32_t j = row_start; j < row_end; j++) {
-            for (uint32_t k = graph.row_ptr[0][j]; k < graph.row_ptr[0][j+1]; k++) {
-                uint32_t col = graph.col_idx[0][k]; 
-                for (uint32_t l = 0; l < t; l++) {
-                    if (col < unit_t[l]) {
-                        edge_acm[l]++;
-                        edges[l].push_back(col);
-                        break;
-                    }
-                }
-            }
-            for (uint32_t k = 0; k < t; k++) {
-                vertices[k].push_back(edge_acm[k]);
-                edge_acm[k] = 0;
-            }
-        }
-
-        uint32_t idx = 1;
-        uint32_t v_acm = 0;
-        for (uint32_t j = 0; j < t; j++) {
-            for (uint32_t k = 0; k < vertices[j].size(); k++) {
-                v_acm += vertices[j][k];
-                subgraph.row_ptr[i][idx] = v_acm;
-                idx++;
-            }
+        uint32_t idx = 0;
+        for (uint32_t j = row_start; j <= row_end; j++) {
+            subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - offset;
+            idx++;
         }
 
         idx = 0;
-        for (uint32_t j = 0; j < t; j++) {
-            for (uint32_t k = 0; k < edges[j].size(); k++) {
-                subgraph.col_idx[i][idx] = edges[j][k];
-                idx++;
-            }
+        for (uint32_t j = graph.row_ptr[0][row_start]; j < graph.row_ptr[0][row_end]; j++) {
+            subgraph.col_idx[i][idx] = graph.col_idx[0][j];
+            idx++;
         }
 
         subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
@@ -206,14 +149,8 @@ static Graph divide_graph(Graph& graph, uint32_t n, uint32_t t) {
         subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].fc_start + static_cast<unsigned>(feature_size * sizeof(Feature));
 
         row_start = row_end;
-
-        for (uint32_t j = 0; j < t; j++) {
-            vertices[j].clear();
-            edges[j].clear();
-        }
     }
 
-    delete [] unit_t;
     delete [] unit_v;
 
     return subgraph;
@@ -332,7 +269,7 @@ static void divide_feature(Graph& subgraph, uint32_t n, vector<map<uint32_t, uin
 
 static void renumbering(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32_t>>& renumber_table) {
     for (uint32_t i = 0; i < n; i++) {
-        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_v * subgraph.dpu_param[i][0].num_t; j++) {
+        for (uint32_t j = 0; j < subgraph.dpu_param[i][0].num_v; j++) {
             vector<uint32_t> col_temp;
             uint32_t row_start = subgraph.row_ptr[i][j];
             uint32_t row_end = subgraph.row_ptr[i][j+1];
@@ -348,6 +285,87 @@ static void renumbering(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32
                 subgraph.col_idx[i][k] = col_temp[k - row_start];
         }
     }
+}
+
+static void tiling(Graph& subgraph, uint32_t n, uint32_t t) {
+    uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
+    uint32_t q_t = num_v_origin / t;
+    uint32_t q_r = num_v_origin - q_t * t;
+
+    uint32_t *unit_t = new uint32_t[t];
+
+    for (uint32_t i = 0; i < t; i++)
+        unit_t[i] = q_t;
+    for (uint32_t i = 0; i < q_r; i++)
+        unit_t[i]++;
+    for (uint32_t i = 1; i < t; i++)
+        unit_t[i] += unit_[i-1];
+
+    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v * t + 1);
+    uint32_t cur_row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v + 1);
+    uint32_t offset = row_ptr_size - cur_row_ptr_size;
+
+    vector<vector<uint32_t>> vertices;
+    vector<vector<uint32_t>> edges;
+    vector<uint32_t> edge_acm(t);
+
+    for (uint32_t i = 0; i < t; i++) {
+        vertices.push_back(vector<uint32_t> ());
+        edges.push_back(vector<uint32_t> ());
+    }
+
+    for (uint32_t i = 0; i < n; i++) {
+        subgraph.dpu_param[i][0].num_t = t;
+        uint32_t row_end = subgraph.dpu_param[i][0].num_v;
+
+        for (uint32_t j = 0; j < row_end; j++) {
+            for (uint32_t k = subgraph.row_ptr[i][j]; k < subgraph.row_ptr[i][j+1]; k++) {
+                uint32_t col = subgraph.col_idx[i][k];
+                for (uint32_t l = 0; l < t; l++) {
+                    if (col < unit_t[l]) {
+                        edge_acm[l]++;
+                        edges[l].push_back(col);
+                        break;
+                    }
+                }
+            }
+            for (uint32_t k = 0; k < t; k++) {
+                vertices[k].push_back(edge_acm[k]);
+                edge_acm[k] = 0;
+            }
+        }
+
+        subgraph.row_ptr[i].resize(row_ptr_size);
+        uint32_t idx = 1;
+        uint32_t v_acm = 0;
+        for (uint32_t j = 0; j < t; j++) {
+            for (uint32_t k = 0; k < vertices[j].size(); k++) {
+                v_acm += vertices[j][k];
+                subgraph.row_ptr[i][idx] = v_acm;
+                idx++;
+            }
+        }
+
+        idx = 0;
+        for (uint32_t j = 0; j < t; j++) {
+            for (uint32_t k = 0; k < edges[j].size(); k++) {
+                subgraph.col_idx[i][idx] = edges[j][k];
+                idx++;
+            }
+        }
+
+        subgraph.dpu_param[i][0].col_idx_start += offset;
+        subgraph.dpu_param[i][0].fc_start += offset;
+        subgraph.dpu_param[i][0].fr_start += offset;
+        subgraph.dpu_param[i][0].output_start += offset;
+
+        for (uint32_t j = 0; j < t; j++) {
+            vertices[j].clear();
+            edges[j].clear();
+        }
+    }
+
+    delete [] unit_t;
 }
 
 static void check_integrity(Graph& subgraph, uint32_t n, uint32_t hash_key) {
