@@ -155,6 +155,93 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     return subgraph;
 }
 
+static Graph divide_graph_improved(Graph& graph, uint32_t n) {
+    Graph subgraph;
+
+    for (uint32_t i = 0; i < n; i++) {
+        subgraph.dpu_param.push_back(vector<DPUGraph> (1));
+    }
+    
+    // distribute vertices in a balanced manner
+    uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
+    uint32_t num_e_origin = graph.dpu_param[0][0].num_e;
+
+    uint32_t *unit_v = new uint32_t[n];
+    uint32_t unit_e = num_e_origin / n;
+
+    uint32_t row_idx_max = 0;
+    uint32_t col_idx_max = 0;
+    uint32_t row_start = 0;
+    uint32_t row_end = 0;
+
+    for (uint32_t i = 0; i < n; i++) {
+        uint32_t num_e = 0;
+        uint32_t start = graph.row_ptr[0][row_start];
+        while (num_e < unit_e) {
+            row_end++;
+            num_e = graph.row_ptr[0][row_end] - start;
+            if (row_end == num_v_origin)
+                break;
+        }
+
+        unit_v[i] = row_end - row_start;
+        if (row_idx_max < unit_v[i])
+            row_idx_max = unit_v[i];
+
+        if (col_idx_max < num_e)
+            col_idx_max = num_e;
+        
+        subgraph.dpu_param[i][0].num_v_origin = num_v_origin;
+        subgraph.dpu_param[i][0].num_e = num_e;
+        subgraph.dpu_param[i][0].num_t = 1;
+
+        row_start = row_end;
+    }
+
+    uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(row_idx_max);
+    uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
+    uint32_t feature_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
+
+    for (uint32_t i = 0; i < n; i++) {
+        subgraph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
+        subgraph.col_idx.push_back(vector<uint32_t> (col_idx_size));
+    }
+    copy(graph.fc.begin(), graph.fc.end(), back_inserter(subgraph.fc));
+
+    row_start = 0;
+    row_end = 0;
+
+    for (uint32_t i = 0; i < n; i++) {
+        subgraph.dpu_param[i][0].num_v = unit_v[i];
+        row_end += unit_v[i];
+
+        uint32_t offset = graph.row_ptr[0][row_start];
+
+        uint32_t idx = 0;
+        for (uint32_t j = row_start; j <= row_end; j++) {
+            subgraph.row_ptr[i][idx] = graph.row_ptr[0][j] - offset;
+            idx++;
+        }
+
+        idx = 0;
+        for (uint32_t j = graph.row_ptr[0][row_start]; j < graph.row_ptr[0][row_end]; j++) {
+            subgraph.col_idx[i][idx] = graph.col_idx[0][j];
+            idx++;
+        }
+
+        subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
+        subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].fc_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].output_start = subgraph.dpu_param[i][0].fc_start + static_cast<unsigned>(feature_size * sizeof(Feature));
+
+        row_start = row_end;
+    }
+
+    delete [] unit_v;
+
+    return subgraph;
+}
+
 static void divide_feature(Graph& subgraph, uint32_t n, vector<map<uint32_t, uint32_t>>& renumber_table) {
     vector<Feature> fc_new;
     vector<vector<bool>> e_check;
