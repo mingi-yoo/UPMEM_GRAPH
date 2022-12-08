@@ -89,39 +89,39 @@ int main(int argc, char** argv) {
 
         auto system = DpuSet::allocate(NR_DPUS);
         
-        auto dpu_baseline = system.dpus()[0];
-        dpu_baseline->load(DPU_BASELINE);
+        // auto dpu_baseline = system.dpus()[0];
+        // dpu_baseline->load(DPU_BASELINE);
 
-        cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
+        // cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
 
-        begin = chrono::steady_clock::now();
-        populate_mram(*dpu_baseline, graph, 0);
-        end = chrono::steady_clock::now();
-        time_base.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-        // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
-        begin = chrono::steady_clock::now();
-        auto baseline_async = dpu_baseline->async();
-        baseline_async.call(run_async);
-        baseline_async.sync();
-        end = chrono::steady_clock::now();
-        time_base.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-        // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
-        dpu_baseline->log(cout);
+        // begin = chrono::steady_clock::now();
+        // populate_mram(*dpu_baseline, graph, 0);
+        // end = chrono::steady_clock::now();
+        // time_base.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
+        // // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
+        // begin = chrono::steady_clock::now();
+        // auto baseline_async = dpu_baseline->async();
+        // baseline_async.call(run_async);
+        // baseline_async.sync();
+        // end = chrono::steady_clock::now();
+        // time_base.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
+        // // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+        // dpu_baseline->log(cout);
 
         vector<vector<float>> result(NR_DPUS);
         for (uint32_t i = 0; i < NR_DPUS; i++)
             result[i].resize(static_cast<unsigned>(graph.fc.size()));
 
-        begin = chrono::steady_clock::now();
-        dpu_baseline->copy(result, static_cast<unsigned>(graph.fc.size() * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
-        end = chrono::steady_clock::now();
-        time_base.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
+        // begin = chrono::steady_clock::now();
+        // dpu_baseline->copy(result, static_cast<unsigned>(graph.fc.size() * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
+        // end = chrono::steady_clock::now();
+        // time_base.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
 
-        cout<<"OUTPUT RECEIVED"<<endl;
-        for (uint32_t i = 0; i < 10; i++)
-            cout<<"DPU RESULT: "<<result[0][i]<<endl;
+        // cout<<"OUTPUT RECEIVED"<<endl;
+        // for (uint32_t i = 0; i < 10; i++)
+        //     cout<<"DPU RESULT: "<<result[0][i]<<endl;
         
-        time_base.total = time_base.transfer + time_base.run + time_base.output_return;
+        // time_base.total = time_base.transfer + time_base.run + time_base.output_return;
 
         // Graph subgraph = divide_graph(graph, NR_DPUS);
         Graph subgraph = divide_graph_improved(graph, NR_DPUS);
@@ -181,13 +181,13 @@ int main(int argc, char** argv) {
 }
 
 void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
-    cout<<"BASELINE TIME RESULT"<<endl;
-    cout<<"-------------------------------"<<endl;
-    cout<<"TRANSFER TIME: "<<time_base.transfer<<endl;
-    cout<<"DPU TIME: "<<time_base.run<<endl;
-    cout<<"OUTPUT RECEIVED TIME: "<<time_base.output_return<<endl<<endl;
-    cout<<"BASELINE TOTAL TIME: "<<time_base.total<<" sec"<<endl;
-    cout<<"-------------------------------"<<endl<<endl;
+    // cout<<"BASELINE TIME RESULT"<<endl;
+    // cout<<"-------------------------------"<<endl;
+    // cout<<"TRANSFER TIME: "<<time_base.transfer<<endl;
+    // cout<<"DPU TIME: "<<time_base.run<<endl;
+    // cout<<"OUTPUT RECEIVED TIME: "<<time_base.output_return<<endl<<endl;
+    // cout<<"BASELINE TOTAL TIME: "<<time_base.total<<" sec"<<endl;
+    // cout<<"-------------------------------"<<endl<<endl;
 
     cout<<"OURS TIME RESULT"<<endl;
     cout<<"-------------------------------"<<endl;
@@ -197,5 +197,5 @@ void print_time(TimeRecord& time_base, TimeRecord& time_ours) {
     cout<<"OURS TOTAL TIME: "<<time_ours.total<<" sec"<<endl;
     cout<<"-------------------------------"<<endl<<endl;
 
-    cout<<"SPEED UP (BASELINE / OURS): "<<time_base.total / time_ours.total<<endl;
+    // cout<<"SPEED UP (BASELINE / OURS): "<<time_base.total / time_ours.total<<endl;
 }

@@ -177,8 +177,13 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
     for (uint32_t i = 0; i < n; i++) {
         uint32_t num_e = 0;
         uint32_t start = graph.row_ptr[0][row_start];
-        while (num_e < unit_e) {
+        while (row_end < num_v_origin) {
             row_end++;
+            if (graph.row_ptr[0][row_end] - start > unit_e) {
+                row_end--;
+                break
+            }
+
             num_e = graph.row_ptr[0][row_end] - start;
             if (row_end == num_v_origin)
                 break;
