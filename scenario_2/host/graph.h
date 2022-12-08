@@ -177,12 +177,19 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
     for (uint32_t i = 0; i < n; i++) {
         uint32_t num_e = 0;
         uint32_t start = graph.row_ptr[0][row_start];
-        while (row_end < num_v_origin) {
+        while (num_e < unit_e && row_end < num_v_origin) {
             row_end++;
+
+            /*
+            // this dividing makes some dpus have no edges.
+            // so, we think about the another options;
+            // all of dpus has less edges than unit_e, and rest are processed in CPU.
+
             if (graph.row_ptr[0][row_end] - start > unit_e) {
                 row_end--;
-                break
+                break;
             }
+            */
 
             num_e = graph.row_ptr[0][row_end] - start;
             if (row_end == num_v_origin)
