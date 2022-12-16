@@ -7,7 +7,6 @@
 #include <alloc.h>
 #include <barrier.h>
 #include <defs.h>
-#include <mram.h>
 #include <perfcounter.h>
 #include <seqread.h>
 
@@ -59,11 +58,7 @@ int main() {
         uint32_t cache_size = 64;
         uint32_t output_cache_size = 2;
 
-        struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
-        mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));    
-
-        struct Feature* fr = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
-        mram_read((__mram_ptr void const*)fr_m, fr, cache_size*sizeof(struct Feature));
+        
 
         uint32_t tasklet_output_m = output_m + row_start_tasklet * sizeof(uint32_t);
         float* output = mem_alloc(output_cache_size*sizeof(float));
@@ -79,6 +74,31 @@ int main() {
 
         uint32_t num_v = num_v_tasklet;
         uint32_t num_t = g_info->num_t;
+
+        seqreader_t fc_reader;
+        seqreader_t fr_reader;
+
+        // caculate value before pr
+        struct Feature* fc = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
+        uint32_t offset = fc_m;
+        for (uint32_t i = 0; i < g_info->num_fc; i++) {
+            mram_read((__mram_ptr void const*)offset, fc, sizeof(struct Feature));
+            fc[0].value = fc[0].value / fc[0].out_deg;
+            mram_write(fc, (__mram_ptr void const*)offset, sizeof(struct Feature));
+            offset += sizeof(struct Feature);
+        }
+
+        struct Feature* fr = (struct Feature*) mem_alloc(cache_size*sizeof(struct Feature));
+        offset = fr_m;
+        for (uint32_t i = 0; i < g_info->num_fr; i++) {
+            mram_read((__mram_ptr void const*)offset, fr, sizeof(struct Feature));
+            fr[0].value = fr[0].value / fr[0].out_deg;
+            mram_write(fr, (__mram_ptr void const*)offset, sizeof(struct Feature));
+            offset += sizeof(struct Feature);
+        }
+
+        mram_read((__mram_ptr void const*)fc_m, fc, cache_size*sizeof(struct Feature));
+        mram_read((__mram_ptr void const*)fr_m, fr, cache_size*sizeof(struct Feature));
 
         for (uint32_t i = 0; i < num_t; i++) {
             for (uint32_t j = 0; j < num_v; j++) {
@@ -97,7 +117,7 @@ int main() {
                             mram_read((__mram_ptr void const*)(fc_m+cache_idx*cache_size*sizeof(struct Feature)), fc, cache_size*sizeof(struct Feature));
                             cur_fc_idx = cache_idx;
                         }
-                        incoming_total += fc[cache_offset].value / fc[cache_offset].out_deg;
+                        incoming_total += fc[cache_offset].value;
                     }
                     else {
                         col -= g_info->num_fc;
@@ -107,7 +127,7 @@ int main() {
                             mram_read((__mram_ptr void const*)(fr_m+cache_idx*cache_size*sizeof(struct Feature)), fr, cache_size*sizeof(struct Feature));
                             cur_fr_idx = cache_idx;
                         }
-                        incoming_total += fr[cache_offset].value / fr[cache_offset].out_deg;
+                        incoming_total += fr[cache_offset].value;
                     }
                     col_idx = seqread_get(col_idx, sizeof(uint32_t), &col_idx_reader);
                 }

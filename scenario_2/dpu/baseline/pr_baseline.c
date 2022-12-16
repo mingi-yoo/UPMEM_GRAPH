@@ -7,7 +7,6 @@
 #include <alloc.h>
 #include <barrier.h>
 #include <defs.h>
-#include <mram.h>
 #include <perfcounter.h>
 #include <seqread.h>
 
