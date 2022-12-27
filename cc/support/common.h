@@ -11,9 +11,12 @@ struct DPUGraph {
     uint32_t num_e;
     uint32_t num_t;
 
+    uint32_t node_start_idx;
+
     uint32_t row_ptr_start;
     uint32_t col_idx_start;
     uint32_t comp_start;
+    uint32_t flag_start;
 };
 
 #endif

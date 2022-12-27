@@ -54,6 +54,7 @@ static Graph read_csr(string csr_path) {
         graph.dpu_param[0][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
         graph.dpu_param[0][0].col_idx_start = graph.dpu_param[0][0].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         graph.dpu_param[0][0].comp_start = graph.dpu_param[0][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        graph.dpu_param[0][0].flag_start = graph_dpu_param[0][0].comp_start + static_cast<unsigned>(comp_size * sizeof(uint32_t));
 
         csr.close();
 
@@ -100,12 +101,14 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i][0].num_v_origin = num_v_origin;
         subgraph.dpu_param[i][0].num_e = num_e;
         subgraph.dpu_param[i][0].num_t = 1;
+        subgraph.dpu_param[i][0].node_start_idx = row_start;
 
         row_start = row_end;
     }
 
     uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(unit_v[0]+1);
     uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
+    uint32_t comp_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
 
     for (uint32_t i = 0; i < n; i++) {
         subgraph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
@@ -137,6 +140,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
         subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i][0].comp_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].flag_start = subgraph_dpu_param[i][0].comp_start + static_cast<unsigned>(comp_size * sizeof(uint32_t));
 
         row_start = row_end;
     }
@@ -156,6 +160,7 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
     // distribute vertices in a balanced manner
     uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
     uint32_t num_e_origin = graph.dpu_param[0][0].num_e;
+    uint32_t comp_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
 
     uint32_t *unit_v = new uint32_t[n];
     uint32_t unit_e = num_e_origin / n;
@@ -197,12 +202,14 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i][0].num_v_origin = num_v_origin;
         subgraph.dpu_param[i][0].num_e = num_e;
         subgraph.dpu_param[i][0].num_t = 1;
+        subgraph.dpu_param[i][0].node_start_idx = row_start;
 
         row_start = row_end;
     }
 
     uint32_t row_ptr_size = ROUND_UP_TO_MULTIPLE_OF_2(row_idx_max);
     uint32_t col_idx_size = ROUND_UP_TO_MULTIPLE_OF_2(col_idx_max);
+    uint32_t comp_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v_origin);
 
     for (uint32_t i = 0; i < n; i++) {
         subgraph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
@@ -234,6 +241,7 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
         subgraph.dpu_param[i][0].row_ptr_start = ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph));
         subgraph.dpu_param[i][0].col_idx_start = subgraph.dpu_param[i][0].row_ptr_start + static_cast<unsigned>(row_ptr_size * sizeof(uint32_t));
         subgraph.dpu_param[i][0].comp_start = subgraph.dpu_param[i][0].col_idx_start + static_cast<unsigned>(col_idx_size * sizeof(uint32_t));
+        subgraph.dpu_param[i][0].flag_start = subgraph_dpu_param[i][0].comp_start + static_cast<unsigned>(comp_size * sizeof(uint32_t));
 
         row_start = row_end;
     }
