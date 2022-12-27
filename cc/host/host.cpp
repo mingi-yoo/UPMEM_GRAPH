@@ -37,8 +37,10 @@ void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, 0, graph.dpu_param, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(DPUGraph)));
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].row_ptr_start, graph.row_ptr);
     dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].col_idx_start, graph.col_idx);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].fc_start, graph.fc);
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].fr_start, graph.fr);
+}
+
+void copy_comp_to_dpu(DpuSetOps& dpu, Graph& graph) {
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].comp_start, graph.comp);
 }
 
 void run_async(DpuSet& system, unsigned dummy) {
@@ -51,7 +53,7 @@ int main(int argc, char** argv) {
     string output_path;
     uint32_t num_t = 1;
 
-    TimeRecord time_base, time_ours;
+    TimeRecord time_ours;
 
     chrono::steady_clock::time_point begin, end;
 
@@ -78,49 +80,15 @@ int main(int argc, char** argv) {
 
         auto system = DpuSet::allocate(NR_DPUS);
         
-        // auto dpu_baseline = system.dpus()[0];
-        // dpu_baseline->load(DPU_BASELINE);
-
-        // cout<<"BASELINE PROGRAM ALLOCATED"<<endl;
-
-        // begin = chrono::steady_clock::now();
-        // populate_mram(*dpu_baseline, graph, 0);
-        // end = chrono::steady_clock::now();
-        // time_base.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-        // // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
-        // begin = chrono::steady_clock::now();
-        // auto baseline_async = dpu_baseline->async();
-        // baseline_async.call(run_async);
-        // baseline_async.sync();
-        // end = chrono::steady_clock::now();
-        // time_base.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-        // // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
-        // dpu_baseline->log(cout);
-
-        vector<vector<float>> result(NR_DPUS);
+        vector<vector<uint32_t>> result(NR_DPUS);
         for (uint32_t i = 0; i < NR_DPUS; i++)
-            result[i].resize(static_cast<unsigned>(graph.fc.size()));
-
-        // begin = chrono::steady_clock::now();
-        // dpu_baseline->copy(result, static_cast<unsigned>(graph.fc.size() * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].output_start);
-        // end = chrono::steady_clock::now();
-        // time_base.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-
-        // cout<<"OUTPUT RECEIVED"<<endl;
-        // for (uint32_t i = 0; i < 10; i++)
-        //     cout<<"DPU RESULT: "<<result[0][i]<<endl;
-        
-        // time_base.total = time_base.transfer + time_base.run + time_base.output_return;
+            result[i].resize(2);
 
         // Graph subgraph = divide_graph(graph, NR_DPUS);
         Graph subgraph = divide_graph_improved(graph, NR_DPUS);
-        vector<map<uint32_t, uint32_t>> renumber_table;
-        divide_feature(subgraph, NR_DPUS, renumber_table);
-        renumbering(subgraph, NR_DPUS, renumber_table);
+
         if (num_t > 1)
             tiling(subgraph, NR_DPUS, num_t);
-
-        //check_integrity(subgraph, NR_DPUS, hash_key);
 
         system.load(DPU_OURS);
 
@@ -131,31 +99,38 @@ int main(int argc, char** argv) {
         time_ours.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
         // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
         
-        begin = chrono::steady_clock::now();
-        auto system_async = system.async();
-        system_async.call(run_async);
-        system_async.sync();
-        end = chrono::steady_clock::now();
-        time_ours.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-        // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            auto dpu = system.dpus()[i];
-            dpu->log(cout);
-        }
-        uint32_t output_size = ROUND_UP_TO_MULTIPLE_OF_2(subgraph.dpu_param[0][0].num_v);
+        bool check = true;
+        while (check) {
+            check = false;
+            copy_comp_to_dpu(system, subgraph);
 
-        begin = chrono::steady_clock::now();
-        system.copy(result, static_cast<unsigned>(output_size * sizeof(float)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].output_start);
-        end = chrono::steady_clock::now();
-        time_ours.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
-
-        cout<<"OUTPUT RECEIVED"<<endl;
-        for (uint32_t i = 0; i < NR_DPUS; i++) {
-            cout<<"DPU "<<i<<endl;
-            for (uint32_t j = 0; j < 5; j++) {
-                cout<<result[i][j]<<endl;
+            begin = chrono::steady_clock::now();
+            auto system_async = system.async();
+            system_async.call(run_async);
+            system_async.sync();
+            end = chrono::steady_clock::now();
+            time_ours.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
+            // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
+            for (uint32_t i = 0; i < NR_DPUS; i++) {
+                auto dpu = system.dpus()[i];
+                dpu->log(cout);
             }
-            cout<<endl;
+
+            begin = chrono::steady_clock::now();
+            // TODO: Copy components
+
+            system.copy(result, static_cast<unsigned>(sizeof(uint64_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].flag_start);
+            end = chrono::steady_clock::now();
+            time_ours.output_return = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
+
+            for (uint32_t i = 0; i < NR_DPUS; i++) {
+                if (result[i][0] == 1) {
+                    check = true;
+                    break;
+                }
+            }
+
+            cout<<"OUTPUT RECEIVED"<<endl;
         }
         
         time_ours.total = time_ours.transfer + time_ours.run + time_ours.output_return;
