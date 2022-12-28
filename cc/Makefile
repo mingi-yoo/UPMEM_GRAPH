@@ -8,7 +8,7 @@ HOST_TARGET := ${BUILDDIR}/host
 DPU_TARGET := ${BUILDDIR}/cc
 
 COMMON_INCLUDES := support
-HOST_SOURCES := $(wildcard ${HOSTls_DIR}/*.cpp)
+HOST_SOURCES := $(wildcard ${HOST_DIR}/*.cpp)
 DPU_SOURCES := $(wildcard ${DPU_DIR}/*.c)
 
 .PHONY: all clean test

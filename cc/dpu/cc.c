@@ -12,7 +12,7 @@
 #include <seqread.h>
 
 #include "dpu_utils.h"
-#include "../../support/common.h"
+#include "../support/common.h"
 
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 MUTEX_INIT(comp_mutex);
