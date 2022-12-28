@@ -5,13 +5,11 @@ NR_TASKLETS ?= 1
 NR_DPUS ?= 4
 
 HOST_TARGET := ${BUILDDIR}/host
-BASE_TARGET := ${BUILDDIR}/pr_baseline
-OURS_TARGET := ${BUILDDIR}/pr_ours
+DPU_TARGET := ${BUILDDIR}/cc
 
 COMMON_INCLUDES := support
 HOST_SOURCES := $(wildcard ${HOST_DIR}/*.cpp)
-BASE_SOURCES := $(wildcard ${DPU_DIR}/baseline/*.c)
-OURS_SOURCES := $(wildcard ${DPU_DIR}/ours/*.c)
+DPU_SOURCES := $(wildcard ${DPU_DIR}/*.c)
 
 .PHONY: all clean test
 
@@ -26,11 +24,8 @@ all: ${HOST_TARGET} ${BASE_TARGET} ${OURS_TARGET}
 ${HOST_TARGET}: ${HOST_SOURCES} ${COMMON_INCLUDES}
 	$(CXX) -o $@ ${HOST_SOURCES} ${HOST_FLAGS}
 
-${BASE_TARGET}: ${BASE_SOURCES} ${COMMON_INCLUDES}
-	dpu-upmem-dpurte-clang ${DPU_FLAGS} -o $@ ${BASE_SOURCES}
-
-${OURS_TARGET}: ${OURS_SOURCES} ${COMMON_INCLUDES}
-	dpu-upmem-dpurte-clang ${DPU_FLAGS} -o $@ ${OURS_SOURCES}
+${DPU_TARGET}: ${DPU_SOURCES} ${COMMON_INCLUDES}
+	dpu-upmem-dpurte-clang ${DPU_FLAGS} -o $@ ${DPU_SOURCES}
 
 clean:
 	$(RM) -r $(BUILDDIR)

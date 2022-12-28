@@ -20,8 +20,8 @@
 using namespace std;
 using namespace dpu;
 
-#ifndef DPU_OURS
-#define DPU_OURS "./bin/cc"
+#ifndef DPU_PROGS
+#define DPU_PROGS "./bin/cc"
 #endif
 
 struct TimeRecord {
@@ -90,9 +90,9 @@ int main(int argc, char** argv) {
         if (num_t > 1)
             tiling(subgraph, NR_DPUS, num_t);
 
-        system.load(DPU_OURS);
+        system.load(DPU_PROGS);
 
-        cout<<"OURS PROGRAM ALLOCATED"<<endl;
+        cout<<"PROGRAM ALLOCATED"<<endl;
         begin = chrono::steady_clock::now();
         populate_mram_parallel(system, subgraph);
         end = chrono::steady_clock::now();
