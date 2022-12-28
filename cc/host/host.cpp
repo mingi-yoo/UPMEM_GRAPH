@@ -126,9 +126,9 @@ int main(int argc, char** argv) {
             for (uint32_t i = 0; i < NR_DPUS; i++) {
                 auto dpu = system.dpus()[i];
                 if (i == 0)
-                    dpu.copy(subgraph.comp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
+                    dpu->copy(subgraph.comp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
                 else {
-                    dpu.copy(comp_temp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
+                    dpu->copy(comp_temp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
                     for (uint32_t j = 0; j < num_v; j++) {
                         if (subgraph.comp[0][j] > comp_temp[0][j])
                             subgraph.comp[0][j] = comp_temp[0][j];
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
                 }
             }
 
-            #pragma omp paralle for
+            #pragma omp parallel for
             for (uint32_t i = 0; i < num_v; i++) {
                 while (subgraph.comp[0][i] != subgraph.comp[0][subgraph.comp[0][i]])
                     subgraph.comp[0][i] = subgraph.comp[0][subgraph.comp[0][i]];
@@ -159,7 +159,6 @@ int main(int argc, char** argv) {
         
         time_ours.total = time_ours.transfer + time_ours.run + time_ours.output_return;
         cout<<"PROGRAM END"<<endl<<endl;
-        print_time(time_base, time_ours);
 
     } catch (const DpuError & e) {
         cerr << e.what() << endl;
