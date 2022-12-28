@@ -100,8 +100,11 @@ int main(int argc, char** argv) {
         // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
         uint32_t num_v = subgraph.dpu_param[0][0].num_v_origin;
         uint32_t comp_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v);
+        uint32_t iteration = 0;
+
         bool check = true;
         while (check) {
+            cout<<"iteration :"<<iteration<<endl;
             check = false;
             copy_comp_to_dpu(system, subgraph);
 
@@ -112,10 +115,10 @@ int main(int argc, char** argv) {
             end = chrono::steady_clock::now();
             time_ours.run = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
             // cout<<"HOST ELAPSED TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs."<<endl;
-            for (uint32_t i = 0; i < NR_DPUS; i++) {
-                auto dpu = system.dpus()[i];
-                dpu->log(cout);
-            }
+            // for (uint32_t i = 0; i < NR_DPUS; i++) {
+            //     auto dpu = system.dpus()[i];
+            //     dpu->log(cout);
+            // }
 
             begin = chrono::steady_clock::now();
 
@@ -123,6 +126,8 @@ int main(int argc, char** argv) {
             // This block is needed to optimize
             // Copy components
             vector<vector<uint32_t>> comp_temp;
+            comp_temp.push_back(vector<uint32_t> (comp_size));
+
             for (uint32_t i = 0; i < NR_DPUS; i++) {
                 auto dpu = system.dpus()[i];
                 if (i == 0)
