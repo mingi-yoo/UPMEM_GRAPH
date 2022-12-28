@@ -40,7 +40,7 @@ void populate_mram_parallel(DpuSetOps& dpu, Graph& graph) {
 }
 
 void copy_comp_to_dpu(DpuSetOps& dpu, Graph& graph) {
-    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].comp_start, graph.comp);
+    dpu.copy(DPU_MRAM_HEAP_POINTER_NAME, graph.dpu_param[0][0].comp_start, graph.comp[0]);
 }
 
 void run_async(DpuSet& system, unsigned dummy) {
@@ -98,7 +98,8 @@ int main(int argc, char** argv) {
         end = chrono::steady_clock::now();
         time_ours.transfer = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9;
         // cout<<"DATA TRANSFER TIME: "<<chrono::duration_cast<chrono::nanoseconds>(end - begin).count() / 1.0e9 <<" secs"<<endl;
-        
+        uint32_t num_v = subgraph.dpu_param[0][0].num_v_origin;
+        uint32_t comp_size = ROUND_UP_TO_MULTIPLE_OF_2(num_v);
         bool check = true;
         while (check) {
             check = false;
@@ -117,7 +118,30 @@ int main(int argc, char** argv) {
             }
 
             begin = chrono::steady_clock::now();
-            // TODO: Copy components
+
+            /////////////////////////////////////////////////////////////////////////
+            // This block is needed to optimize
+            // Copy components
+            vector<vector<uint32_t>> comp_temp;
+            for (uint32_t i = 0; i < NR_DPUS; i++) {
+                auto dpu = system.dpus()[i];
+                if (i == 0)
+                    dpu.copy(subgraph.comp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
+                else {
+                    dpu.copy(comp_temp, static_cast<unsigned>(comp_size * sizeof(uint32_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[i][0].comp_start);
+                    for (uint32_t j = 0; j < num_v; j++) {
+                        if (subgraph.comp[0][j] > comp_temp[0][j])
+                            subgraph.comp[0][j] = comp_temp[0][j];
+                    }
+                }
+            }
+
+            #pragma omp paralle for
+            for (uint32_t i = 0; i < num_v; i++) {
+                while (subgraph.comp[0][i] != subgraph.comp[0][subgraph.comp[0][i]])
+                    subgraph.comp[0][i] = subgraph.comp[0][subgraph.comp[0][i]];
+            }
+            /////////////////////////////////////////////////////////////////////////
 
             system.copy(result, static_cast<unsigned>(sizeof(uint64_t)), DPU_MRAM_HEAP_POINTER_NAME, subgraph.dpu_param[0][0].flag_start);
             end = chrono::steady_clock::now();

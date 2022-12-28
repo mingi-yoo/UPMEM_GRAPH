@@ -18,7 +18,7 @@ OURS_SOURCES := $(wildcard ${DPU_DIR}/ours/*.c)
 __dirs := $(shell mkdir -p ${BUILDDIR})
 
 COMMON_FLAGS := -Wall -Wextra -g -I${COMMON_INCLUDES}
-HOST_FLAGS := ${COMMON_FLAGS} -std=c++11 -O3 `dpu-pkg-config --cflags --libs dpu` -DNR_TASKLETS=${NR_TASKLETS} -DNR_DPUS=${NR_DPUS}
+HOST_FLAGS := ${COMMON_FLAGS} -std=c++11 -O3 -fopenmp `dpu-pkg-config --cflags --libs dpu` -DNR_TASKLETS=${NR_TASKLETS} -DNR_DPUS=${NR_DPUS}
 DPU_FLAGS := ${COMMON_FLAGS} -O2 -DNR_TASKLETS=${NR_TASKLETS}
 
 all: ${HOST_TARGET} ${BASE_TARGET} ${OURS_TARGET}

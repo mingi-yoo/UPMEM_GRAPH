@@ -19,7 +19,7 @@ struct Graph {
     vector<vector<DPUGraph>> dpu_param;
     vector<vector<uint32_t>> row_ptr;
     vector<vector<uint32_t>> col_idx;
-    vector<uint32_t> comp;
+    vector<vector<uint32_t>> comp;
 };
 
 static Graph read_csr(string csr_path) {
@@ -40,7 +40,7 @@ static Graph read_csr(string csr_path) {
 
         graph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
         graph.col_idx.push_back(vector<uint32_t> (col_idx_size));
-        graph.comp.resize(comp_size);
+        graph.comp.push_back(vector<uint32_t> (comp_size));
 
         for (uint32_t i = 0; i <= graph.dpu_param[0][0].num_v; i++) {
             csr >> graph.row_ptr[0][i];
@@ -48,6 +48,10 @@ static Graph read_csr(string csr_path) {
 
         for (uint32_t i = 0; i < graph.dpu_param[0][0].num_e; i++) {
             csr >> graph.col_idx[0][i];
+        }
+
+        for (uint32_t i = 0; i < graph.dpu_param[0].num_v; i++) {
+            graph.comp[0][i] = i;
         }
 
         // set offset
@@ -71,6 +75,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param.push_back(vector<DPUGraph> (1));
     }
+    subgraph.comp.push_back(vector<uint32_t> ());
     
     // distribute vertices in a balanced manner
     uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
@@ -114,7 +119,7 @@ static Graph divide_graph(Graph& graph, uint32_t n) {
         subgraph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
         subgraph.col_idx.push_back(vector<uint32_t> (col_idx_size));
     }
-    copy(graph.comp.begin(), graph.comp.end(), back_inserter(subgraph.comp));
+    copy(graph.comp[0].begin(), graph.comp[0].end(), back_inserter(subgraph.comp[0]));
 
     row_start = 0;
     row_end = 0;
@@ -156,6 +161,7 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
     for (uint32_t i = 0; i < n; i++) {
         subgraph.dpu_param.push_back(vector<DPUGraph> (1));
     }
+    subgraph.comp.push_back(vector<uint32_t> ());
     
     // distribute vertices in a balanced manner
     uint32_t num_v_origin = graph.dpu_param[0][0].num_v_origin;
@@ -215,7 +221,7 @@ static Graph divide_graph_improved(Graph& graph, uint32_t n) {
         subgraph.row_ptr.push_back(vector<uint32_t> (row_ptr_size));
         subgraph.col_idx.push_back(vector<uint32_t> (col_idx_size));
     }
-    copy(graph.comp.begin(), graph.comp.end(), back_inserter(subgraph.comp));
+    copy(graph.comp[0].begin(), graph.comp[0].end(), back_inserter(subgraph.comp[0]));
 
     row_start = 0;
     row_end = 0;
