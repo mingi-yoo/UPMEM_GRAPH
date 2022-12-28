@@ -25,7 +25,7 @@ int main() {
 	barrier_wait(&my_barrier);
 
 	uint32_t g_info_m = (uint32_t) DPU_MRAM_HEAP_POINTER;
-	struct DPUGraph* g_info = (sturct DPUGraph*) mem_alloc(ROUND_UP_TO_MULTIPLE_OF_8(sizeof(struct DPUGraph)));
+	struct DPUGraph* g_info = (struct DPUGraph*) mem_alloc(ROUND_UP_TO_MULTIPLE_OF_8(sizeof(struct DPUGraph)));
 	mram_read((__mram_ptr void const*)g_info_m, g_info, ROUND_UP_TO_MULTIPLE_OF_8(sizeof(struct DPUGraph)));
 
 	uint32_t num_v_per_tasklet = ROUND_UP_TO_MULTIPLE_OF_2((g_info->num_v - 1) / NR_TASKLETS + 1);
@@ -79,7 +79,7 @@ int main() {
         					mutex_lock(mutex_id);
         					change = 1;
         					store4B(low_comp, comp_m, high_comp, cache_other);
-        					mutex_unloc(mutex_id);
+        					mutex_unlock(mutex_id);
         				}
         			}
         		}
@@ -89,5 +89,5 @@ int main() {
 	barrier_wait(&my_barrier);
 
 	if (me() == 0)
-		store4B(change, flag_m, 0, cache_comp_other);
+		store4B(change, flag_m, 0, cache_other);
 }
