@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
         
         // time_base.total = time_base.transfer + time_base.run + time_base.output_return;
 
-        // Graph subgraph = divide_graph(graph, NR_DPUS);
-        Graph subgraph = divide_graph_improved(graph, NR_DPUS);
+        Graph subgraph = divide_graph(graph, NR_DPUS);
+        // Graph subgraph = divide_graph_improved(graph, NR_DPUS);
         vector<map<uint32_t, uint32_t>> renumber_table;
         divide_feature(subgraph, NR_DPUS, renumber_table);
         renumbering(subgraph, NR_DPUS, renumber_table);
